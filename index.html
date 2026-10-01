@@ -3,9 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>Sammy is GOD!</title>
 </head>
+
 <body>
-    <h1>Hello, World!</h1>
+    <div id="testdiv">
+        <h1>{{sitename}}</h1>
+
+        <p>Here is a message:<br><br> {{message}}</p>
+
+        <p>
+            I am {{name}}.
+            I  love beautiful scene.
+            <br><br>
+
+            <img :src="image" alt="Beautiful scene">
+        </p>
+
+        <button v-on:click="testMethod()">
+            TEST BUTTON
+        </button>
+
+        <p>{{testText}}</p>
+
+        <hr>
+
+        <div v-if="showProduct">
+
+            <h2>{{product.title}}</h2>
+
+            <p>{{product.description}}</p>
+
+            <p>Price: £{{product.price}}</p>
+
+            <img
+                :src="product.image"
+                :alt="product.title"
+                width="300"
+            >
+
+            <p>
+                {{product.availableInventory - cartItemCount}}
+                available.
+            </p>
+
+            <button
+                v-on:click="addItem()"
+                v-bind:disabled="!canAddToCart"
+            >
+                Add to Cart
+            </button>
+
+            <p>
+                Items in cart: {{cartItemCount}}
+            </p>
+
+            <button v-on:click="showCheckout()">
+                Checkout ({{cartItemCount}})
+            </button>
+
+        </div>
+
+        <div v-else>
+
+            <h2>Checkout Page</h2>
+
+            <p>
+                Items in cart: {{cartItemCount}}
+            </p>
+
+            <p>
+                Total: £{{cartItemCount * product.price}}
+            </p>
+
+            <button v-on:click="showCheckout()">
+                Back to Products
+            </button>
+
+        </div>
+
+    </div>
+
+    <script type="module">
+
+        const {createApp} = Vue
+
+        const myApp = createApp({
+
+            data(){
+
+                return{
+
+                    sitename: 'Sammy is GOD!',
+
+                    message: 'Hello World',
+
+                    name: 'Sammy',
+
+                    image: 'scene.png',
+
+                    testText: 'Test message',
+
+                    product: {
+
+                        id: 1001,
+
+                        title: 'Beautiful Scenery',
+
+                        description: 'Irresistable animated painting',
+
+                        price: 20,
+
+                        image: 'scene.png',
+
+                        availableInventory: 5
+
+                    },
+
+                    cart: [],
+
+                    showProduct: true
+
+                }
+
+            },
+
+            computed:{
+
+                cartItemCount(){
+
+                    return this.cart.length
+
+                },
+
+                canAddToCart(){
+
+                    return this.product.availableInventory > this.cartItemCount
+
+                }
+
+            },
+
+            methods:{
+
+                testMethod(){
+
+                    this.testText = 'Button has been clicked!'
+
+                },
+
+                addItem(){
+
+                    this.cart.push(this.product.id)
+
+                },
+
+                showCheckout(){
+
+                    this.showProduct = !this.showProduct
+
+                }
+            }
+        })
+        myApp.mount('#testdiv')
+    </script>
 </body>
 </html>
