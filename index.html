@@ -8,6 +8,29 @@
 </head>
 <body>
     <div id="app">
+        <h1>{{ siteName }}</h1>
+<h2>{{ lesson.subject }}</h2>
+<p>Location: {{ lesson.location }}</p>
+<p>Price: £{{ lesson.price }}</p>
+<img :src="lesson.image" :alt="lesson.imageAlt" width="300">
 </div>
+<script>
+  const { createApp } = Vue;
+
+  createApp({
+    data() {
+      return {
+        siteName: "After-School Lessons",
+        lesson: {
+          subject: "Computer Science",
+          location: "Hendon",
+          price: 12,
+          image: "comp.jpg",
+          imageAlt: "imageAlt: A computer classroom with desktop computers"
+        }
+      };
+    }
+  }).mount("#app");
+</script>
 </body>
 </html>
