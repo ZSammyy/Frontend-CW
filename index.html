@@ -33,7 +33,7 @@
   <div id="app">
     <h1>{{ siteName }}</h1>
     <button class="btn btn-success mb-3" :disabled="cart.length === 0" @click="showCart = !showCart">
-      <i class="fas fa-shopping-cart"></i> Cart ({{ cart.length }})
+      <i class="fas fa-shopping-cart"></i> My Cart ({{ cart.length }})
     </button>
 
     <!-- Loading Spinner -->
@@ -104,26 +104,26 @@
         <h3>Checkout</h3>
 
         <label for="customerName" class="form-label">Name</label>
-        <input
-        id="customerName"
-        type="text"
-        class="form-control mb-3"
-        v-model.trim="customerName"
-        >
+        <input id="customerName" type="text" class="form-control mb-3" v-model.trim="customerName">
         <label for="customerPhone" class="form-label">Phone</label>
-        <input
-        id="customerPhone"
-        type="text"
-        class="form-control"
-        v-model.trim="customerPhone"
-        >
+        <input id="customerPhone" type="text" class="form-control" v-model.trim="customerPhone">
       </div>
-      <button class="btn btn-primary mt-3" :disabled="!isCheckoutValid">
-        Checkout
-      </button>
-      <button class="btn btn-secondary" @click="showCart = false">
-        Back to lessons
-      </button>
+      <div class="d-flex justify-content-between align-items-center gap-3 mt-3">
+        <button class="btn btn-primary" :disabled="!isCheckoutValid" @click="placeOrder">
+          Checkout
+        </button>
+
+        <button class="btn btn-secondary" @click="showCart = false">
+          Back to lessons
+        </button>
+      </div>
+
+      <div v-if="orderMessage" class="alert mt-3" :class="{
+    'alert-success': orderMessage === 'Order submitted successfully.',
+    'alert-danger': orderMessage !== 'Order submitted successfully.'
+  }">
+        {{ orderMessage }}
+      </div>
     </div>
   </div>
 
@@ -143,7 +143,8 @@
           customerName: "",
           customerPhone: "",
           loading: true,
-          errorMsg: ""
+          errorMsg: "",
+          orderMessage: "",
         };
       },
       mounted() {
@@ -168,7 +169,7 @@
           return /^[A-Za-z ]+$/.test(this.customerName);
         },
         isPhoneValid() {
-          return /^[0-9 +()-]+$/.test(this.customerPhone);
+          return /^[0-9]+$/.test(this.customerPhone);
         },
         isCheckoutValid() {
           return this.isNameValid && this.isPhoneValid && this.cart.length > 0;
@@ -190,6 +191,45 @@
           if (lesson.space > 0) {
             lesson.space -= 1;
             this.cart.push(lesson);
+          }
+        },
+        async placeOrder() {
+          const order = {
+            name: this.customerName,
+            phone: this.customerPhone,
+            lessonIDs: this.cart.map(lesson => lesson._id)
+          };
+          try {
+            const response = await fetch(`${this.apiUrl}/orders`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(order)
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Order failed.");
+            for (const lesson of this.cart) {
+              const updateResponse = await fetch(
+                `${this.apiUrl}/lessons/${lesson._id}`,
+                {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ space: lesson.space })
+                }
+              );
+
+              if (!updateResponse.ok) {
+                throw new Error("Order saved, but lesson spaces could not be updated.");
+              }
+            }
+
+            this.cart = [];
+            this.customerName = "";
+            this.customerPhone = "";
+
+            this.orderMessage = "Order submitted successfully.";
+          } catch (error) {
+            this.orderMessage = error.message;
           }
         },
         removeFromCart(index) {
