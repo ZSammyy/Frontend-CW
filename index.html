@@ -43,28 +43,28 @@
 
     <!-- Error Message -->
     <div v-if="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
-<div class="d-flex gap-2 mb-3" v-if="!showCart && !loading && !errorMsg">
-  <label>
-    Sort by:
-    <select v-model="sortBy">
-      <option value="topic">Subject</option>
-      <option value="location">Location</option>
-      <option value="price">Price</option>
-      <option value="space">Spaces</option>
-    </select>
-  </label>
+    <div class="d-flex gap-2 mb-3" v-if="!showCart && !loading && !errorMsg">
+      <label>
+        Sort by:
+        <select v-model="sortBy">
+          <option value="topic">Subject</option>
+          <option value="location">Location</option>
+          <option value="price">Price</option>
+          <option value="space">Spaces</option>
+        </select>
+      </label>
 
-  <label>
-    Order:
-    <select v-model="sortOrder">
-      <option value="asc">Ascending</option>
-      <option value="desc">Descending</option>
-    </select>
-  </label>
-</div>
+      <label>
+        Order:
+        <select v-model="sortOrder">
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+      </label>
+    </div>
     <!-- Lesson Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" v-if="!showCart && !loading && !errorMsg">
-      <div class="col" v-for="lesson in lessons" :key="lesson._id">
+      <div class="col" v-for="lesson in sortedLessons" :key="lesson._id">
         <div class="card lesson-card shadow-sm">
           <div class="card-body text-center d-flex flex-column">
             <div class="icon-wrapper"><i class="fas fa-laptop-code"></i></div>
@@ -100,7 +100,27 @@
           Remove
         </button>
       </div>
+      <div class="card mt-3">
+        <h3>Checkout</h3>
 
+        <label for="customerName" class="form-label">Name</label>
+        <input
+        id="customerName"
+        type="text"
+        class="form-control mb-3"
+        v-model.trim="customerName"
+        >
+        <label for="customerPhone" class="form-label">Phone</label>
+        <input
+        id="customerPhone"
+        type="text"
+        class="form-control"
+        v-model.trim="customerPhone"
+        >
+      </div>
+      <button class="btn btn-primary mt-3" :disabled="!isCheckoutValid">
+        Checkout
+      </button>
       <button class="btn btn-secondary" @click="showCart = false">
         Back to lessons
       </button>
@@ -120,12 +140,39 @@
           showCart: false,
           sortBy: "topic",
           sortOrder: "asc",
+          customerName: "",
+          customerPhone: "",
           loading: true,
           errorMsg: ""
         };
       },
       mounted() {
         this.fetchLessons();
+      },
+      computed: {
+        sortedLessons() {
+          return [...this.lessons].sort((a, b) => {
+            const first = a[this.sortBy];
+            const second = b[this.sortBy];
+            if (typeof first === "string") {
+              return this.sortOrder === "asc"
+                ? first.localeCompare(second)
+                : second.localeCompare(first);
+            }
+            return this.sortOrder === "asc"
+              ? first - second
+              : second - first;
+          });
+        },
+        isNameValid() {
+          return /^[A-Za-z ]+$/.test(this.customerName);
+        },
+        isPhoneValid() {
+          return /^[0-9 +()-]+$/.test(this.customerPhone);
+        },
+        isCheckoutValid() {
+          return this.isNameValid && this.isPhoneValid && this.cart.length > 0;
+        }
       },
       methods: {
         async fetchLessons() {
