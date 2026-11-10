@@ -1,36 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <title>After-School Lessons</title>
-</head>
-<body>
-    <div id="app">
-        <h1>{{ siteName }}</h1>
-<h2>{{ lesson.subject }}</h2>
-<p>Location: {{ lesson.location }}</p>
-<p>Price: £{{ lesson.price }}</p>
-<img :src="lesson.image" :alt="lesson.imageAlt" width="300">
-</div>
-<script>
-  const { createApp } = Vue;
 
-  createApp({
-    data() {
-      return {
-        siteName: "After-School Lessons",
-        lesson: {
-          subject: "Computer Science",
-          location: "Hendon",
-          price: 12,
-          image: "comp.jpg",
-          imageAlt: "imageAlt: A computer classroom with desktop computers"
-        }
-      };
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>CWhub</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
     }
-  }).mount("#app");
-</script>
+
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 300px;
+    }
+
+    .icon {
+      font-size: 2rem;
+      color: #2a5298;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <h1>{{ siteName }}</h1>
+    <div class="card">
+      <h2>{{ lesson.topic }}</h2>
+
+      <div class="icon"><i class="fas fa-laptop-code"></i></div>
+
+      <p><strong>Location:</strong> {{ lesson.location }}</p>
+      <p><strong>Price:</strong> £{{ lesson.price }}</p>
+      <p><strong>Spaces Left:</strong> {{ lesson.space }}</p>
+
+      <!-- Added a loop to show the session time -->
+      <p><strong>Time:</strong> {{ lesson.sessions[0].day }} {{ lesson.sessions[0].startTime }} - {{
+        lesson.sessions[0].endTime }}</p>
+
+      <button style="padding: 8px 12px; cursor: pointer;">Add to Cart</button>
+    </div>
+  </div>
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          siteName: "After-School Lessons",
+          lesson: {
+            topic: "Computer Science",
+            location: "Hatchcroft H104",
+            price: 12,
+            space: 5,
+            sessions: [
+              { day: "Monday", startTime: "16:00", endTime: "17:00" }
+            ],
+          }
+        };
+      }
+    }).mount("#app");
+  </script>
 </body>
+
 </html>
