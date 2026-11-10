@@ -213,7 +213,7 @@
               const updateResponse = await fetch(`${this.apiUrl}/lessons/${lesson._id}`, {
                   method: "PUT",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ space: lesson.space })
+                  body: JSON.stringify({ space: Number(lesson.space)})
               });
               if (!updateResponse.ok) throw new Error("Order saved, but lesson spaces could not be updated.");
             }
