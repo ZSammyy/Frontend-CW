@@ -31,23 +31,47 @@
 
 <body>
   <div id="app">
-    <h1>{{ siteName }}</h1>
-    <div class="card">
-      <h2>{{ lesson.topic }}</h2>
+<h1>{{ siteName }}</h1>
+<button class="btn btn-success mb-3">
+  <i class="fas fa-shopping-cart"></i> Cart ({{ cart.length }})
+</button>
 
-      <div class="icon"><i class="fas fa-laptop-code"></i></div>
+<!-- Loading Spinner -->
+<div v-if="loading" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status"></div>
+</div>
 
-      <p><strong>Location:</strong> {{ lesson.location }}</p>
-      <p><strong>Price:</strong> £{{ lesson.price }}</p>
-      <p><strong>Spaces Left:</strong> {{ lesson.space }}</p>
+<!-- Error Message -->
+<div v-if="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
 
-      <!-- Added a loop to show the session time -->
-      <p><strong>Time:</strong> {{ lesson.sessions[0].day }} {{ lesson.sessions[0].startTime }} - {{
-        lesson.sessions[0].endTime }}</p>
+<!-- Lesson Grid -->
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" v-if="!loading && !errorMsg">
+  <div class="col" v-for="lesson in lessons" :key="lesson._id">
+    <div class="card lesson-card shadow-sm">
+      <div class="card-body text-center d-flex flex-column">
+        <div class="icon-wrapper"><i class="fas fa-laptop-code"></i></div>
+        <h5 class="card-title fw-bold">{{ lesson.topic }}</h5>
+        <p class="text-muted mb-1"><i class="fas fa-map-marker-alt text-danger"></i> {{ lesson.location }}</p>
+        
+        <p class="small text-secondary">
+          <i class="far fa-clock"></i> 
+          {{ lesson.sessions[0].day }} {{ lesson.sessions[0].startTime }} - {{ lesson.sessions[0].endTime }}
+        </p>
 
-      <button style="padding: 8px 12px; cursor: pointer;">Add to Cart</button>
+        <div class="mt-auto pt-3">
+          <p class="fw-bold text-success fs-5 mb-1">£{{ lesson.price }}.00</p>
+          <p class="small text-muted mb-2">Spaces: {{ lesson.space }}</p>
+          <button 
+            class="btn btn-outline-primary w-100 rounded-pill" 
+            :disabled="lesson.space === 0"
+            @click="addToCart(lesson)">
+            {{ lesson.space === 0 ? 'Sold Out' : 'Add to Cart' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
+</div>
   <script>
     const { createApp } = Vue;
 
@@ -55,16 +79,34 @@
       data() {
         return {
           siteName: "CWhub",
-          lesson: {
-            topic: "Computer Science",
-            location: "Hatchcroft H104",
-            price: 12,
-            space: 5,
-            sessions: [
-              { day: "Monday", startTime: "16:00", endTime: "17:00" }
-            ],
-          }
+          apiUrl: "http://localhost:3000",
+          lessons: [],
+          cart: [],
+          loading: true,
+          errorMsg: ""
         };
+      },
+      mounted() {
+        this.fetchLessons();
+      },
+      methods: {
+        async fetchLessons() {
+          try {
+            const response = await fetch(`${this.apiUrl}/lessons`);
+            if (!response.ok) throw new Error("Server error");
+            this.lessons = await response.json();
+          } catch (error) {
+            this.errorMsg = "Could not connect to the server. Make sure 'node server.js' is running.";
+          } finally {
+            this.loading = false;
+          }
+        },
+        addToCart(lesson) {
+          if (lesson.space > 0) {
+            lesson.space -= 1;
+            this.cart.push(lesson);
+          }
+        }
       }
     }).mount("#app");
   </script>
