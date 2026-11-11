@@ -45,6 +45,12 @@
                 </i>
                 <h2 class="card-title">{{ lesson.topic }}</h2>
                 <p class="card-text">Location: {{ lesson.location }}</p>
+                <div v-if="lesson.sessions && lesson.sessions.length > 0">
+                    <p v-for="session in lesson.sessions" :key="session.day + session.startTime" class="card-text">
+                        <i class="fa-regular fa-clock"></i>
+                        {{ session.day }} {{ session.startTime }} - {{ session.endTime }}
+                    </p>
+                </div>
                 <p class="card-text">Price: £{{ lesson.price }} per hour</p>
                 <p class="card-text">Spaces: {{ lesson.space }}</p>
                 <button class="btn btn-outline-primary" :disabled="lesson.space === 0" @click="addToCart(lesson)">
@@ -83,7 +89,11 @@
             <button class="btn btn-primary mt-3" :disabled="!isCheckoutValid" @click="placeOrder">
                 Checkout
             </button>
-
+            <div v-if="orderMessage" class="alert mt-3" :class="orderMessage === 'Order submitted successfully.'
+            ? 'alert-success'
+            : 'alert-danger'">
+                {{ orderMessage }}
+            </div>
             <button class="btn btn-secondary" @click="showCart = false">
                 Back to lessons
             </button>
@@ -105,6 +115,7 @@
                     errorMsg: "",
                     customerName: "",
                     customerPhone: "",
+                    orderMessage: "",
                 };
             },
             mounted() {
@@ -162,6 +173,50 @@
                     const lesson = this.cart[index];
                     lesson.space++;
                     this.cart.splice(index, 1);
+                },
+                async placeOrder() {
+                    this.orderMessage = "";
+
+                    const order = {
+                        name: this.customerName,
+                        phone: this.customerPhone,
+                        lessonIDs: this.cart.map(lesson => lesson._id)
+                    };
+
+                    try {
+                        const orderResponse = await fetch(`${this.apiUrl}/orders`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(order)
+                        });
+
+                        if (!orderResponse.ok) {
+                            throw new Error("Could not save the order.");
+                        }
+
+                        for (const lesson of this.cart) {
+                            const updateResponse = await fetch(
+                                `${this.apiUrl}/lessons/${lesson._id}`,
+                                {
+                                    method: "PUT",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ space: Number(lesson.space) })
+                                }
+                            );
+
+                            if (!updateResponse.ok) {
+                                throw new Error("Order saved, but lesson spaces could not be updated.");
+                            }
+                        }
+
+                        this.orderMessage = "Order submitted successfully.";
+                        this.cart = [];
+                        this.customerName = "";
+                        this.customerPhone = "";
+                        await this.fetchLessons();
+                    } catch (error) {
+                        this.orderMessage = error.message;
+                    }
                 }
             },
         }).mount("#app");
