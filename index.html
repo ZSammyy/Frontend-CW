@@ -13,17 +13,80 @@
 <body>
     <div id="app">
         <h1>{{ siteName }}</h1>
-        <div v-for="lesson in lessons" :key="lesson.id" class="card shadow-sm mt-3" style="max-width: 24rem;">
+        <button class="btn btn-success" :disabled="cart.length === 0" @click="showCart = !showCart">
+            My Cart ({{ cart.length }})
+        </button>
+        <div v-if="errorMsg" class="alert alert-danger mt-3">
+            {{ errorMsg }}
+        </div>
+        <div v-if="!showCart" class="d-flex gap-3 my-3">
+            <label>
+                Sort by:
+                <select v-model="sortBy" class="form-select">
+                    <option value="topic">Subject</option>
+                    <option value="location">Location</option>
+                    <option value="price">Price</option>
+                    <option value="space">Spaces</option>
+                </select>
+            </label>
+
+            <label>
+                Order:
+                <select v-model="sortOrder" class="form-select">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </label>
+        </div>
+        <div v-for="lesson in sortedLessons" v-show="!showCart" :key="lesson._id" class="card shadow-sm mt-3"
+            style="max-width: 24rem;">
             <div class="card-body text-center">
-                <i
-  :class="['fa-solid', lesson.icon, 'fa-3x', 'text-primary', 'mb-3']"
-  aria-hidden="true">
-</i>
+                <i :class="['fa-solid', lesson.icon, 'fa-3x', 'text-primary', 'mb-3']" aria-hidden="true">
+                </i>
                 <h2 class="card-title">{{ lesson.topic }}</h2>
                 <p class="card-text">Location: {{ lesson.location }}</p>
                 <p class="card-text">Price: £{{ lesson.price }} per hour</p>
                 <p class="card-text">Spaces: {{ lesson.space }}</p>
+                <button class="btn btn-outline-primary" :disabled="lesson.space === 0" @click="addToCart(lesson)">
+                    {{ lesson.space === 0 ? "Sold Out" : "Add to Cart" }}
+                </button>
             </div>
+        </div>
+        <div v-show="showCart">
+            <h2>Your Cart</h2>
+
+            <p v-if="cart.length === 0">Your cart is empty.</p>
+
+            <div v-for="(item, index) in cart" :key="index" class="card mb-3">
+                <div class="card-body">
+                    <h3>{{ item.topic }}</h3>
+                    <p>{{ item.location }}</p>
+                    <p>£{{ item.price }} per hour</p>
+                    <button class="btn btn-outline-danger" @click="removeFromCart(index)">
+                        Remove
+                    </button>
+                </div>
+            </div>
+            <div v-if="cart.length > 0" class="card mt-3">
+                <div class="card-body">
+                    <h3>Checkout</h3>
+
+                    <label for="customerName" class="form-label">Name</label>
+                    <input id="customerName" type="text" class="form-control mb-3" v-model.trim="customerName"
+                        placeholder="Letters only">
+
+                    <label for="customerPhone" class="form-label">Phone</label>
+                    <input id="customerPhone" type="text" class="form-control" v-model.trim="customerPhone"
+                        placeholder="Numbers only">
+                </div>
+            </div>
+            <button class="btn btn-primary mt-3" :disabled="!isCheckoutValid" @click="placeOrder">
+                Checkout
+            </button>
+
+            <button class="btn btn-secondary" @click="showCart = false">
+                Back to lessons
+            </button>
         </div>
     </div>
     <script>
@@ -33,23 +96,74 @@
             data() {
                 return {
                     siteName: "CWhub",
-                    lessons: [
-                        { id: 1, topic: "Guitar Lessons", location: "London", price: 30, space: 5, icon: "fa-guitar" },
-                        { id: 2, topic: "Computer Science Lessons", location: "Manchester", price: 25, space: 3, icon: "fa-laptop" },
-                        { id: 3, topic: "Drum Lessons", location: "Birmingham", price: 20, space: 4, icon: "fa-drum" },
-                        { id: 4, topic: "Swimming Lessons", location: "Liverpool", price: 35, space: 2, icon: "fa-swimmer" },
-                        { id: 5, topic: "Robotics Lessons", location: "Leeds", price: 28, space: 5, icon: "fa-robot" },
-                        { id: 6, topic: "Coding Lessons", location: "Bristol", price: 22, space: 5, icon: "fa-code" },
-                        { id: 7, topic: "Photography Lessons", location: "Newcastle", price: 30, space: 4, icon: "fa-camera" },
-                        { id: 8, topic: "Art Lessons", location: "Sheffield", price: 18, space: 5, icon: "fa-paint-brush" },
-                        { id: 9, topic: "Chess Lessons", location: "Nottingham", price: 25, space: 5, icon: "fa-chess" },
-                        { id: 10, topic: "Cooking Lessons", location: "Cardiff", price: 20, space: 5, icon: "fa-utensils" },
-                        { id: 11, topic: "Language Lessons", location: "Edinburgh", price: 30, space: 5, icon: "fa-language" },
-                        { id: 12, topic: "Yoga Lessons", location: "Glasgow", price: 15, space: 5, icon: "fa-person-praying" }
-                       
-                    ]
+                    sortBy: "topic",
+                    sortOrder: "asc",
+                    cart: [],
+                    showCart: false,
+                    apiUrl: "http://localhost:3000",
+                    lessons: [],
+                    errorMsg: "",
+                    customerName: "",
+                    customerPhone: "",
                 };
-            }
+            },
+            mounted() {
+                this.fetchLessons();
+            },
+            computed: {
+                sortedLessons() {
+                    const direction = this.sortOrder === "asc" ? 1 : -1;
+
+                    return [...this.lessons].sort((a, b) => {
+                        const first = a[this.sortBy];
+                        const second = b[this.sortBy];
+
+                        if (typeof first === "string") {
+                            return direction * first.localeCompare(second);
+                        }
+
+                        return direction * (first - second);
+                    });
+                },
+                isNameValid() {
+                    return /^[A-Za-z ]+$/.test(this.customerName);
+                },
+                isPhoneValid() {
+                    return /^[0-9]+$/.test(this.customerPhone);
+                },
+                isCheckoutValid() {
+                    return this.isNameValid &&
+                        this.isPhoneValid &&
+                        this.cart.length > 0;
+                }
+            },
+            methods: {
+                async fetchLessons() {
+                    try {
+                        const response = await fetch(`${this.apiUrl}/lessons`);
+
+                        if (!response.ok) {
+                            throw new Error("Could not get lessons.");
+                        }
+
+                        this.lessons = await response.json();
+                    } catch (error) {
+                        console.error(error);
+                        this.errorMsg = "Could not load lessons. Check that the backend is running.";
+                    }
+                },
+                addToCart(lesson) {
+                    if (lesson.space > 0) {
+                        lesson.space--;
+                        this.cart.push(lesson);
+                    }
+                },
+                removeFromCart(index) {
+                    const lesson = this.cart[index];
+                    lesson.space++;
+                    this.cart.splice(index, 1);
+                }
+            },
         }).mount("#app");
     </script>
 
