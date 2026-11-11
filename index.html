@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>CWhub</title>
+</head>
+
+<body>
+    <div id="app">
+        <h1>{{ siteName }}</h1>
+        <div v-for="lesson in lessons" :key="lesson.id" class="card shadow-sm mt-3" style="max-width: 24rem;">
+            <div class="card-body text-center">
+                <i
+  :class="['fa-solid', lesson.icon, 'fa-3x', 'text-primary', 'mb-3']"
+  aria-hidden="true">
+</i>
+                <h2 class="card-title">{{ lesson.topic }}</h2>
+                <p class="card-text">Location: {{ lesson.location }}</p>
+                <p class="card-text">Price: £{{ lesson.price }} per hour</p>
+                <p class="card-text">Spaces: {{ lesson.space }}</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    siteName: "CWhub",
+                    lessons: [
+                        { id: 1, topic: "Guitar Lessons", location: "London", price: 30, space: 5, icon: "fa-guitar" },
+                        { id: 2, topic: "Computer Science Lessons", location: "Manchester", price: 25, space: 3, icon: "fa-laptop" },
+                        { id: 3, topic: "Drum Lessons", location: "Birmingham", price: 20, space: 4, icon: "fa-drum" },
+                        { id: 4, topic: "Swimming Lessons", location: "Liverpool", price: 35, space: 2, icon: "fa-swimmer" },
+                        { id: 5, topic: "Robotics Lessons", location: "Leeds", price: 28, space: 5, icon: "fa-robot" },
+                        { id: 6, topic: "Coding Lessons", location: "Bristol", price: 22, space: 5, icon: "fa-code" },
+                        { id: 7, topic: "Photography Lessons", location: "Newcastle", price: 30, space: 4, icon: "fa-camera" },
+                        { id: 8, topic: "Art Lessons", location: "Sheffield", price: 18, space: 5, icon: "fa-paint-brush" },
+                        { id: 9, topic: "Chess Lessons", location: "Nottingham", price: 25, space: 5, icon: "fa-chess" },
+                        { id: 10, topic: "Cooking Lessons", location: "Cardiff", price: 20, space: 5, icon: "fa-utensils" },
+                        { id: 11, topic: "Language Lessons", location: "Edinburgh", price: 30, space: 5, icon: "fa-language" },
+                        { id: 12, topic: "Yoga Lessons", location: "Glasgow", price: 15, space: 5, icon: "fa-person-praying" }
+                       
+                    ]
+                };
+            }
+        }).mount("#app");
+    </script>
+
+</body>
+
+</html>
