@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <title>CWhub</title>
@@ -44,8 +42,7 @@
 
             <div v-if="!showCart && !showOrders && !showTimetable" class="d-flex flex-column align-items-end gap-2"
                 style="width: min(100%, 720px)">
-
-                <!-- First row: search, My Cart, and My Orders -->
+                <!-- Search, My Cart, and My Orders -->
                 <div class="d-flex align-items-center justify-content-end gap-2 w-100 flex-nowrap">
                     <div class="input-group flex-grow-1" style="min-width: 0">
                         <input type="search" class="form-control" v-model.trim="searchQuery" @input="fetchLessons"
@@ -69,7 +66,7 @@
                     </button>
                 </div>
 
-                <!-- Second row: sorting and Grid/List controls -->
+                <!-- Sorting and Grid/List controls -->
                 <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
                     <label class="d-flex align-items-center gap-2">
                         Sort by:
@@ -109,36 +106,35 @@
         <div v-if="errorMsg" class="alert alert-danger mt-3">
             {{ errorMsg }}
         </div>
+
         <div v-if="cartMessage && !showCart" class="alert alert-warning mt-3">
             {{ cartMessage }}
         </div>
 
         <!-- Lesson results -->
         <div v-show="!showCart && !showOrders && !showTimetable" :class="layout === 'grid'
-        ? 'row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mt-2'
-        : 'd-flex flex-column gap-3 mt-2'">
-
+                ? 'row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mt-2'
+                : 'd-flex flex-column gap-3 mt-2'">
             <div v-for="lesson in sortedLessons" :key="lesson._id" :class="layout === 'grid' ? 'col' : 'w-100'">
-
                 <div class="card shadow-sm h-100">
                     <div class="card-body" :class="layout === 'grid'
-              ? 'text-center'
-              : 'd-flex align-items-center gap-3 flex-wrap'">
-
+                            ? 'text-center'
+                            : 'd-flex align-items-center gap-3 flex-wrap'">
                         <div :class="layout === 'grid' ? '' : 'd-flex align-items-center gap-3'">
                             <i :class="[
-                  'fa-solid',
-                  lesson.icon,
-                  layout === 'grid' ? 'fa-3x mb-3' : 'fa-2x',
-                  'text-primary'
-                ]" aria-hidden="true">
-                            </i>
+                                    'fa-solid',
+                                    lesson.icon,
+                                    layout === 'grid' ? 'fa-3x mb-3' : 'fa-2x',
+                                    'text-primary'
+                                ]" aria-hidden="true"></i>
 
                             <h2 class="card-title mb-2">{{ lesson.topic }}</h2>
                         </div>
 
                         <div :class="layout === 'grid' ? '' : 'ms-auto text-end'">
-                            <p class="card-text">Location: {{ lesson.location }}</p>
+                            <p class="card-text">
+                                Location: {{ lesson.location }}
+                            </p>
 
                             <p v-for="session in lesson.sessions" :key="session.day + session.startTime"
                                 class="card-text">
@@ -146,8 +142,14 @@
                                 {{ session.day }} {{ session.startTime }} - {{ session.endTime }}
                             </p>
 
-                            <p class="card-text">Price: £{{ lesson.price }} per hour</p>
-                            <p class="card-text">Spaces: {{ lesson.space }}</p>
+                            <p class="card-text">
+                                Price: £{{ lesson.price }} per hour
+                            </p>
+
+                            <p class="card-text">
+                                Spaces: {{ lesson.space }}
+                            </p>
+
                             <p class="card-text">
                                 Enrolments: {{ enrolmentCounts[lesson._id] || 0 }}
                             </p>
@@ -171,10 +173,11 @@
         <div v-if="showCart">
             <h2>Your Cart</h2>
 
-            <p v-if="cart.length === 0">Your cart is empty.</p>
+            <p v-if="cart.length === 0">
+                Your cart is empty.
+            </p>
 
             <div v-for="(item, index) in cart" :key="index" class="card mb-3">
-
                 <div class="card-body">
                     <h3>{{ item.topic }}</h3>
                     <p>{{ item.location }}</p>
@@ -211,14 +214,14 @@
             </div>
 
             <div v-if="orderMessage" class="alert mt-3" :class="{
-          'alert-success': orderMessage === 'Order submitted successfully.',
-          'alert-danger': orderMessage !== 'Order submitted successfully.'
-        }">
+                    'alert-success': orderMessage === 'Order submitted successfully.',
+                    'alert-danger': orderMessage !== 'Order submitted successfully.'
+                }">
                 {{ orderMessage }}
             </div>
         </div>
 
-        <!-- My Orders placeholder; we will connect it to MongoDB next -->
+        <!-- My Orders -->
         <div v-if="showOrders">
             <h2>My Orders</h2>
             <p>Enter the phone number you used at checkout to find your orders.</p>
@@ -230,6 +233,7 @@
                 <button class="btn btn-primary" type="submit" :disabled="!ordersPhone">
                     Find Orders
                 </button>
+
                 <button v-if="orders.length > 0" type="button" class="btn btn-outline-primary flex-shrink-0"
                     @click="showTimetable = true; showCart = false; showOrders = false">
                     <i class="fa-solid fa-calendar-days me-1" aria-hidden="true"></i>
@@ -250,6 +254,7 @@
                         <h4>{{ lesson.topic }}</h4>
                         <p>{{ lesson.location }}</p>
                         <p>£{{ lesson.price }} per hour</p>
+
                         <label class="form-label mt-2" :for="'reschedule-' + order._id + '-' + lesson._id">
                             Move to another lesson
                         </label>
@@ -257,7 +262,9 @@
                         <div class="d-flex gap-2">
                             <select class="form-select" :id="'reschedule-' + order._id + '-' + lesson._id"
                                 v-model="rescheduleChoices[order._id + '-' + lesson._id]">
-                                <option disabled value="">Choose an available lesson</option>
+                                <option disabled value="">
+                                    Choose an available lesson
+                                </option>
 
                                 <option v-for="availableLesson in lessons" :key="availableLesson._id"
                                     :value="availableLesson._id"
@@ -274,6 +281,7 @@
                             </button>
                         </div>
                     </div>
+
                     <button class="btn btn-outline-danger mt-2" type="button" @click="cancelOrder(order)">
                         Cancel order
                     </button>
@@ -284,69 +292,68 @@
                 Back to lessons
             </button>
         </div>
-    </div>
 
-    <div v-if="showTimetable">
-        <h2>My Timetable</h2>
+        <!-- My Timetable: kept inside #app so Vue can control it -->
+        <div v-if="showTimetable">
+            <h2>My Timetable</h2>
 
-        <p v-if="orders.length === 0">
-            No timetable entries are loaded yet. Open My Orders and search with your checkout phone number first.
-        </p>
-
-        <div v-else class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Day</th>
-                        <th>Time</th>
-                        <th>Lesson</th>
-                        <th>Location</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <template v-for="order in orders" :key="order._id">
-                        <template v-for="lesson in order.lessons" :key="lesson._id">
-                            <tr v-for="session in lesson.sessions || []"
-                                :key="lesson._id + session.day + session.startTime">
-                                <td>{{ session.day }}</td>
-                                <td>{{ session.startTime }}–{{ session.endTime }}</td>
-                                <td>{{ lesson.topic }}</td>
-                                <td>{{ lesson.location }}</td>
-                            </tr>
-                        </template>
-                    </template>
-                </tbody>
-            </table>
-        </div>
-
-        <button class="btn btn-secondary" @click="showTimetable = false; showOrders = true">
-            Back to My Orders
-        </button>
-    </div>
-
-    <!-- Added-to-cart pop-up -->
-    <div v-if="showAddModal" class="modal-backdrop-custom" @click.self="showAddModal = false">
-
-        <div class="modal-box-custom">
-            <button class="btn-close float-end" aria-label="Close" @click="showAddModal = false">
-            </button>
-
-            <h2>Added to My Cart</h2>
-
-            <p v-if="selectedLesson">
-                {{ selectedLesson.topic }} is in your cart.
+            <p v-if="orders.length === 0">
+                No timetable entries are loaded yet. Open My Orders and search with your checkout phone number first.
             </p>
 
-            <button class="btn btn-primary me-2" @click="showCart = true; showOrders = false; showAddModal = false">
-                Continue to checkout
-            </button>
+            <div v-else class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time</th>
+                            <th>Lesson</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
 
-            <button class="btn btn-secondary" @click="showAddModal = false">
-                Continue browsing
+                    <tbody>
+                        <template v-for="order in orders" :key="order._id">
+                            <template v-for="lesson in order.lessons" :key="lesson._id">
+                                <tr v-for="session in lesson.sessions || []"
+                                    :key="lesson._id + session.day + session.startTime">
+                                    <td>{{ session.day }}</td>
+                                    <td>{{ session.startTime }}–{{ session.endTime }}</td>
+                                    <td>{{ lesson.topic }}</td>
+                                    <td>{{ lesson.location }}</td>
+                                </tr>
+                            </template>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="btn btn-secondary" @click="showTimetable = false; showOrders = true">
+                Back to My Orders
             </button>
         </div>
-    </div>
+
+        <!-- Added-to-cart pop-up -->
+        <div v-if="showAddModal" class="modal-backdrop-custom" @click.self="showAddModal = false">
+            <div class="modal-box-custom">
+                <button class="btn-close float-end" aria-label="Close" @click="showAddModal = false"></button>
+
+                <h2>Added to My Cart</h2>
+
+                <p v-if="selectedLesson">
+                    {{ selectedLesson.topic }} is in your cart.
+                </p>
+
+                <button class="btn btn-primary me-2" @click="showCart = true; showOrders = false; showAddModal = false">
+                    Continue to checkout
+                </button>
+
+                <button class="btn btn-secondary" @click="showAddModal = false">
+                    Continue browsing
+                </button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -377,7 +384,7 @@
                     showAddModal: false,
                     selectedLesson: null,
                     enrolmentCounts: {},
-                    cartMessage: "",
+                    cartMessage: ""
                 };
             },
 
@@ -488,7 +495,9 @@
                 },
 
                 async cancelOrder(order) {
-                    const confirmed = window.confirm("Are you sure you want to cancel this order?");
+                    const confirmed = window.confirm(
+                        "Are you sure you want to cancel this order?"
+                    );
 
                     if (!confirmed) {
                         return;
@@ -501,8 +510,12 @@
                             `${this.apiUrl}/orders/${order._id}`,
                             {
                                 method: "DELETE",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ phone: this.ordersPhone })
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    phone: this.ordersPhone
+                                })
                             }
                         );
 
@@ -512,13 +525,17 @@
                             throw new Error(result.error || "Could not cancel the order.");
                         }
 
-                        this.orders = this.orders.filter(item => item._id !== order._id);
+                        this.orders = this.orders.filter(
+                            item => item._id !== order._id
+                        );
                         this.ordersMessage = result.message;
+
                         await this.fetchLessons();
                     } catch (error) {
                         this.ordersMessage = error.message;
                     }
                 },
+
                 async rescheduleLesson(order, oldLesson) {
                     const choiceKey = `${order._id}-${oldLesson._id}`;
                     const newLessonId = this.rescheduleChoices[choiceKey];
@@ -532,10 +549,12 @@
                             `${this.apiUrl}/orders/${order._id}/reschedule`,
                             {
                                 method: "PUT",
-                                headers: { "Content-Type": "application/json" },
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
                                 body: JSON.stringify({
                                     phone: this.ordersPhone,
-                                    oldLessonId: oldLesson._id,
+                                    oldLessonId,
                                     newLessonId
                                 })
                             }
@@ -576,7 +595,8 @@
                     }
 
                     if (this.hasScheduleConflict(lesson)) {
-                        this.cartMessage = "This lesson overlaps with a lesson already in your cart.";
+                        this.cartMessage =
+                            "This lesson overlaps with a lesson already in your cart.";
                         return;
                     }
 
@@ -585,6 +605,7 @@
                     this.selectedLesson = lesson;
                     this.showAddModal = true;
                 },
+
                 removeFromCart(index) {
                     const lesson = this.cart[index];
                     lesson.space++;
@@ -601,11 +622,16 @@
                     };
 
                     try {
-                        const orderResponse = await fetch(`${this.apiUrl}/orders`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(order)
-                        });
+                        const orderResponse = await fetch(
+                            `${this.apiUrl}/orders`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(order)
+                            }
+                        );
 
                         if (!orderResponse.ok) {
                             throw new Error("Could not save the order.");
@@ -616,13 +642,19 @@
                                 `${this.apiUrl}/lessons/${lesson._id}`,
                                 {
                                     method: "PUT",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ space: Number(lesson.space) })
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        space: Number(lesson.space)
+                                    })
                                 }
                             );
 
                             if (!updateResponse.ok) {
-                                throw new Error("Order saved, but lesson spaces could not be updated.");
+                                throw new Error(
+                                    "Order saved, but lesson spaces could not be updated."
+                                );
                             }
                         }
 
