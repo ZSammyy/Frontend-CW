@@ -16,6 +16,14 @@
         <button class="btn btn-success" :disabled="cart.length === 0" @click="showCart = !showCart">
             My Cart ({{ cart.length }})
         </button>
+        <div v-if="!showCart" class="input-group my-3">
+            <button class="btn btn-outline-secondary" type="button" aria-label="Search" @click="fetchLessons">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            </button>
+
+            <input type="search" class="form-control" v-model.trim="searchQuery" @input="fetchLessons"
+                placeholder="Search lessons..." aria-label="Search lessons">
+        </div>
         <div v-if="errorMsg" class="alert alert-danger mt-3">
             {{ errorMsg }}
         </div>
@@ -38,26 +46,63 @@
                 </select>
             </label>
         </div>
-        <div v-for="lesson in sortedLessons" v-show="!showCart" :key="lesson._id" class="card shadow-sm mt-3"
-            style="max-width: 24rem;">
-            <div class="card-body text-center">
-                <i :class="['fa-solid', lesson.icon, 'fa-3x', 'text-primary', 'mb-3']" aria-hidden="true">
-                </i>
-                <h2 class="card-title">{{ lesson.topic }}</h2>
-                <p class="card-text">Location: {{ lesson.location }}</p>
-                <div v-if="lesson.sessions && lesson.sessions.length > 0">
-                    <p v-for="session in lesson.sessions" :key="session.day + session.startTime" class="card-text">
-                        <i class="fa-regular fa-clock"></i>
-                        {{ session.day }} {{ session.startTime }} - {{ session.endTime }}
-                    </p>
+        <div v-if="!showCart" class="btn-group mb-2" role="group" aria-label="Lesson layout">
+            <button type="button" class="btn btn-outline-secondary" :class="{ active: layout === 'grid' }"
+                @click="layout = 'grid'">
+                <i class="fa-solid fa-grip" aria-hidden="true"></i> Grid
+            </button>
+
+            <button type="button" class="btn btn-outline-secondary" :class="{ active: layout === 'list' }"
+                @click="layout = 'list'">
+                <i class="fa-solid fa-list" aria-hidden="true"></i> List
+            </button>
+        </div>
+        <div v-show="!showCart" :class="layout === 'grid'
+  ? 'row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mt-2'
+  : 'd-flex flex-column gap-3 mt-2'">
+
+            <div v-for="lesson in sortedLessons" :key="lesson._id" :class="layout === 'grid' ? 'col' : 'w-100'">
+
+                <div class="card shadow-sm h-100">
+                    <div class="card-body" :class="layout === 'grid'
+    ? 'text-center'
+    : 'd-flex align-items-center gap-3 flex-wrap'">
+
+                        <div :class="layout === 'grid' ? '' : 'd-flex align-items-center gap-3'">
+                            <i :class="[
+        'fa-solid',
+        lesson.icon,
+        layout === 'grid' ? 'fa-3x mb-3' : 'fa-2x',
+        'text-primary'
+      ]" aria-hidden="true">
+                            </i>
+                            <h2 class="card-title mb-2">{{ lesson.topic }}</h2>
+                        </div>
+
+                        <div :class="layout === 'grid' ? '' : 'ms-auto text-end'">
+                            <p class="card-text">Location: {{ lesson.location }}</p>
+
+                            <p v-for="session in lesson.sessions" :key="session.day + session.startTime"
+                                class="card-text">
+                                <i class="fa-regular fa-clock"></i>
+                                {{ session.day }} {{ session.startTime }} - {{ session.endTime }}
+                            </p>
+
+                            <p class="card-text">Price: £{{ lesson.price }} per hour</p>
+                            <p class="card-text">Spaces: {{ lesson.space }}</p>
+
+                            <button class="btn btn-outline-primary" :disabled="lesson.space === 0"
+                                @click="addToCart(lesson)">
+                                {{ lesson.space === 0 ? "Sold Out" : "Add to Cart" }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <p class="card-text">Price: £{{ lesson.price }} per hour</p>
-                <p class="card-text">Spaces: {{ lesson.space }}</p>
-                <button class="btn btn-outline-primary" :disabled="lesson.space === 0" @click="addToCart(lesson)">
-                    {{ lesson.space === 0 ? "Sold Out" : "Add to Cart" }}
-                </button>
             </div>
         </div>
+        <p v-if="!showCart && !errorMsg && searchQuery && lessons.length === 0" class="text-muted">
+            No lessons found for "{{ searchQuery }}".
+        </p>
         <div v-show="showCart">
             <h2>Your Cart</h2>
 
@@ -116,6 +161,10 @@
                     customerName: "",
                     customerPhone: "",
                     orderMessage: "",
+                    searchQuery: "",
+                    layout: "grid",
+                    showAddModal: false,
+                    selectedLesson: null,
                 };
             },
             mounted() {
@@ -151,7 +200,9 @@
             methods: {
                 async fetchLessons() {
                     try {
-                        const response = await fetch(`${this.apiUrl}/lessons`);
+                        const response = await fetch(
+                            `${this.apiUrl}/lessons?search=${encodeURIComponent(this.searchQuery)}`
+                        );
 
                         if (!response.ok) {
                             throw new Error("Could not get lessons.");
