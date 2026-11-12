@@ -12,6 +12,138 @@
     <title>CWhub</title>
 
     <style>
+        body,
+        button,
+        input,
+        select,
+        textarea {
+            font-family: "Times New Roman", Times, serif;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            color: #302044;
+            background: linear-gradient(135deg, #6d28d9 0%, #a855f7 48%, #fb7185 100%);
+            background-attachment: fixed;
+        }
+
+        #app {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .brand-title {
+            font-family: Papyrus, fantasy;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 800;
+            letter-spacing: 0;
+            background: linear-gradient(
+                90deg,
+                #1769ff,
+                #35c8ff,
+                #fff000,
+                #1769ff
+            );
+            background-size: 300% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: blueYellowFlow 5s linear infinite;
+        }
+
+        @keyframes blueYellowFlow {
+            from {
+                background-position: 0% 50%;
+            }
+
+            to {
+                background-position: 300% 50%;
+            }
+        }
+
+        h2,
+        h3,
+        h4,
+        h5 {
+            font-weight: 700;
+        }
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 12px 30px rgba(48, 20, 70, 0.18);
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 17px 36px rgba(48, 20, 70, 0.24);
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid #e2d5ef;
+            border-radius: 12px;
+            padding: 0.7rem 0.9rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 0.22rem rgba(168, 85, 247, 0.18);
+        }
+
+        .btn {
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn:not(.btn-close) {
+            color: #fff;
+            border: 1px solid transparent;
+            background: linear-gradient(110deg,
+                    #7c3aed,
+                    #d946ef,
+                    #f43f5e,
+                    #ff7043,
+                    #7c3aed);
+            background-size: 300% 100%;
+            animation: neonCoralFlow 5s ease infinite;
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .btn:not(.btn-close):hover:not(:disabled) {
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 18px rgba(255, 93, 120, 0.55);
+        }
+
+        .btn:not(.btn-close):focus-visible {
+            outline: 3px solid #ffe4f0;
+            outline-offset: 2px;
+        }
+
+        .btn:disabled {
+            animation: none;
+            opacity: 0.6;
+        }
+
+        @keyframes neonCoralFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
         .modal-backdrop-custom {
             position: fixed;
             inset: 0;
@@ -20,15 +152,15 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(31, 15, 48, 0.55);
         }
 
         .modal-box-custom {
             width: min(100%, 420px);
             padding: 1.5rem;
-            border-radius: 12px;
+            border-radius: 20px;
             background: white;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 15px 45px rgba(31, 15, 48, 0.3);
         }
 
         .notification-backdrop-custom {
@@ -39,17 +171,31 @@
             align-items: flex-start;
             justify-content: flex-end;
             padding: 5rem 1rem 1rem;
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(31, 15, 48, 0.45);
         }
 
         .notification-panel-custom {
-            width: min(100%, 420px);
+            width: min(100%, 460px);
             max-height: 75vh;
             overflow-y: auto;
             padding: 1rem;
-            border-radius: 12px;
+            border-radius: 20px;
             background: white;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 15px 45px rgba(31, 15, 48, 0.3);
+        }
+
+        @media (max-width: 576px) {
+            #app {
+                padding: 1rem !important;
+            }
+
+            .notification-backdrop-custom {
+                padding: 4.5rem 0.6rem 0.6rem;
+            }
+
+            .notification-panel-custom {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -58,12 +204,11 @@
     <div id="app" class="container-fluid p-3">
         <!-- Header and controls -->
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap my-3">
-            <h1 class="mb-0">{{ siteName }}</h1>
+            <h1 class="brand-title mb-0">{{ siteName }}</h1>
 
             <div class="d-flex align-items-start justify-content-end gap-2 flex-grow-1">
                 <div v-if="!showCart && !showOrders && !showTimetable" class="d-flex flex-column align-items-end gap-2"
                     style="width: min(100%, 720px)">
-                    <!-- Search, cart, and orders -->
                     <div class="d-flex align-items-center justify-content-end gap-2 w-100 flex-nowrap">
                         <div class="input-group flex-grow-1" style="min-width: 0">
                             <input type="search" class="form-control" v-model.trim="searchQuery" @input="fetchLessons"
@@ -88,7 +233,6 @@
                         </button>
                     </div>
 
-                    <!-- Sorting and layout controls -->
                     <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
                         <label class="d-flex align-items-center gap-2">
                             Sort by:
@@ -124,7 +268,6 @@
                     </div>
                 </div>
 
-                <!-- Notification button -->
                 <button class="btn btn-outline-secondary flex-shrink-0 position-relative" type="button"
                     aria-label="Notifications" title="Notifications" @click="showNotificationPopup = true">
                     <i class="fa-solid fa-bell" aria-hidden="true"></i>
@@ -145,7 +288,7 @@
             {{ cartMessage }}
         </div>
 
-        <!-- Lesson results -->
+        <!-- Lesson list -->
         <div v-show="!showCart && !showOrders && !showTimetable" :class="layout === 'grid'
                 ? 'row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mt-2'
                 : 'd-flex flex-column gap-3 mt-2'">
@@ -222,8 +365,19 @@
                         placeholder="Letters only">
 
                     <label for="customerPhone" class="form-label">Phone</label>
-                    <input id="customerPhone" type="text" class="form-control" v-model.trim="customerPhone"
+                    <input id="customerPhone" type="tel" class="form-control mb-3" v-model.trim="customerPhone"
                         placeholder="Numbers only">
+
+                    <label for="paymentMethod" class="form-label">Payment method</label>
+                    <select id="paymentMethod" class="form-select" v-model="paymentMethod">
+                        <option disabled value="">Choose a payment method</option>
+                        <option value="card-demo">Card (demo)</option>
+                        <option value="google-pay-demo">Google Pay (demo)</option>
+                    </select>
+
+                    <small class="text-muted">
+                        Demo only — no payment will be taken.
+                    </small>
                 </div>
             </div>
 
@@ -262,6 +416,9 @@
                 <div class="card-body">
                     <h3>Order</h3>
                     <p>Placed: {{ order.createdAt }}</p>
+                    <p v-if="order.paymentMethod">
+                        Payment: {{ paymentMethodLabel(order.paymentMethod) }}
+                    </p>
 
                     <div v-for="lesson in order.lessons" :key="lesson._id" class="border-top pt-2 mt-2">
                         <h4>{{ lesson.topic }}</h4>
@@ -450,6 +607,7 @@
                     errorMsg: "",
                     customerName: "",
                     customerPhone: "",
+                    paymentMethod: "",
                     searchQuery: "",
                     layout: "grid",
                     showAddModal: false,
@@ -501,11 +659,18 @@
                 isCheckoutValid() {
                     return this.isNameValid &&
                         this.isPhoneValid &&
+                        this.paymentMethod !== "" &&
                         this.cart.length > 0;
                 }
             },
 
             methods: {
+                paymentMethodLabel(method) {
+                    if (method === "card-demo") return "Card (demo)";
+                    if (method === "google-pay-demo") return "Google Pay (demo)";
+                    return method;
+                },
+
                 formatNotification(item) {
                     return {
                         id: String(item._id),
@@ -831,7 +996,7 @@
                         );
 
                         await this.fetchLessons();
-                        await this.addNotification(result.message);
+                        await this.addNotification(result.message || "Your order was cancelled successfully.");
                     } catch (error) {
                         await this.addNotification(error.message);
                     }
@@ -887,7 +1052,7 @@
                     );
                 },
 
-                addToCart(lesson) {
+                async addToCart(lesson) {
                     this.cartMessage = "";
 
                     if (lesson.space <= 0) return;
@@ -901,13 +1066,28 @@
                     lesson.space--;
                     this.cart.push(lesson);
                     this.selectedLesson = lesson;
+
+                    await this.addNotification(
+                        lesson.topic + " was added to your cart."
+                    );
+
+                    // Keep the add-to-cart choices visible and let the bell badge
+                    // indicate that the notification was added.
+                    this.showNotificationPopup = false;
                     this.showAddModal = true;
                 },
 
-                removeFromCart(index) {
+                async removeFromCart(index) {
                     const lesson = this.cart[index];
+
+                    if (!lesson) return;
+
                     lesson.space++;
                     this.cart.splice(index, 1);
+
+                    await this.addNotification(
+                        lesson.topic + " was removed from your cart."
+                    );
                 },
 
                 async placeOrder() {
@@ -916,6 +1096,7 @@
                     const order = {
                         name: this.customerName,
                         phone: phoneForNotifications,
+                        paymentMethod: this.paymentMethod,
                         lessonIDs: this.cart.map(lesson => lesson._id)
                     };
 
@@ -966,6 +1147,7 @@
                         this.cart = [];
                         this.customerName = "";
                         this.customerPhone = "";
+                        this.paymentMethod = "";
 
                         await this.fetchLessons();
                         await this.addNotification("Order submitted successfully.");
