@@ -223,7 +223,7 @@
                 <button class="btn btn-primary" type="submit" :disabled="!ordersPhone">
                     Find Orders
                 </button>
-                <button class="btn btn-outline-primary flex-shrink-0"
+                <button v-if="orders.length > 0" class="btn btn-outline-primary flex-shrink-0"
                     @click="showTimetable = true; showCart = false; showOrders = false">
                     <i class="fa-solid fa-calendar-days me-1" aria-hidden="true"></i>
                     My Timetable
@@ -243,6 +243,29 @@
                         <h4>{{ lesson.topic }}</h4>
                         <p>{{ lesson.location }}</p>
                         <p>£{{ lesson.price }} per hour</p>
+                        <label class="form-label mt-2" :for="'reschedule-' + order._id + '-' + lesson._id">
+                            Move to another lesson
+                        </label>
+
+                        <div class="d-flex gap-2">
+                            <select class="form-select" :id="'reschedule-' + order._id + '-' + lesson._id"
+                                v-model="rescheduleChoices[order._id + '-' + lesson._id]">
+                                <option disabled value="">Choose an available lesson</option>
+
+                                <option v-for="availableLesson in lessons" :key="availableLesson._id"
+                                    :value="availableLesson._id"
+                                    :disabled="availableLesson._id === lesson._id || availableLesson.space === 0">
+                                    {{ availableLesson.topic }} — {{ availableLesson.location }}
+                                    ({{ availableLesson.space }} spaces)
+                                </option>
+                            </select>
+
+                            <button class="btn btn-outline-primary flex-shrink-0"
+                                :disabled="!rescheduleChoices[order._id + '-' + lesson._id]"
+                                @click="rescheduleLesson(order, lesson)">
+                                Reschedule
+                            </button>
+                        </div>
                     </div>
                     <button class="btn btn-outline-danger mt-2" type="button" @click="cancelOrder(order)">
                         Cancel order
@@ -252,6 +275,44 @@
 
             <button class="btn btn-secondary" @click="showOrders = false">
                 Back to lessons
+            </button>
+        </div>
+        <div v-if="showTimetable">
+            <h2>My Timetable</h2>
+
+            <p v-if="orders.length === 0">
+                No timetable entries are loaded yet. Open My Orders and search with your checkout phone number first.
+            </p>
+
+            <div v-else class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time</th>
+                            <th>Lesson</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <template v-for="order in orders" :key="order._id">
+                            <template v-for="lesson in order.lessons" :key="lesson._id">
+                                <tr v-for="session in lesson.sessions || []"
+                                    :key="lesson._id + session.day + session.startTime">
+                                    <td>{{ session.day }}</td>
+                                    <td>{{ session.startTime }}–{{ session.endTime }}</td>
+                                    <td>{{ lesson.topic }}</td>
+                                    <td>{{ lesson.location }}</td>
+                                </tr>
+                            </template>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="btn btn-secondary" @click="showTimetable = false; showOrders = true">
+                Back to My Orders
             </button>
         </div>
 
@@ -294,6 +355,7 @@
                     showTimetable: false,
                     orders: [],
                     ordersPhone: "",
+                    rescheduleChoices: {},
                     ordersMessage: "",
                     apiUrl: "http://localhost:3000",
                     lessons: [],
@@ -418,7 +480,42 @@
                         this.ordersMessage = error.message;
                     }
                 },
+                async rescheduleLesson(order, oldLesson) {
+                    const choiceKey = `${order._id}-${oldLesson._id}`;
+                    const newLessonId = this.rescheduleChoices[choiceKey];
 
+                    if (!newLessonId) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(
+                            `${this.apiUrl}/orders/${order._id}/reschedule`,
+                            {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    phone: this.ordersPhone,
+                                    oldLessonId: oldLesson._id,
+                                    newLessonId
+                                })
+                            }
+                        );
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.error || "Could not reschedule the order.");
+                        }
+
+                        await this.fetchOrders();
+                        await this.fetchLessons();
+
+                        this.ordersMessage = result.message;
+                    } catch (error) {
+                        this.ordersMessage = error.message;
+                    }
+                },
 
                 addToCart(lesson) {
                     if (lesson.space > 0) {
