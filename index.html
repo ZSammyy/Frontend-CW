@@ -430,7 +430,7 @@
                         </div>
                     </div>
 
-                    <button class="btn btn-outline-danger mt-2" type="button" @click="cancelOrder(order)">
+                    <button class="btn btn-outline-danger mt-2" type="button" @click="confirmCancelOrder(order)">
                         Cancel order
                     </button>
                 </div>
@@ -479,6 +479,24 @@
             <button class="btn btn-secondary" @click="showTimetable = false; showOrders = true">
                 Back to My Orders
             </button>
+        </div>
+
+        <!-- Cancel-order confirmation popup -->
+        <div v-if="showCancelModal" class="modal-backdrop-custom" @click.self="closeCancelModal">
+            <div class="modal-box-custom" role="dialog" aria-modal="true">
+                <h2>Cancel this order?</h2>
+                <p>Are you sure you want to cancel this order?</p>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary" type="button" @click="closeCancelModal">
+                        Keep order
+                    </button>
+
+                    <button class="btn btn-outline-danger" type="button" @click="cancelOrder">
+                        Yes, cancel order
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Notifications popup -->
@@ -609,6 +627,8 @@
                     showCart: false,
                     showOrders: false,
                     showTimetable: false,
+                    showCancelModal: false,
+                    orderToCancel: null,
                     showNotificationPopup: false,
                     notifications: [],
                     notificationPhone: "",
@@ -982,12 +1002,22 @@
                     }
                 },
 
-                async cancelOrder(order) {
-                    const confirmed = window.confirm(
-                        "Are you sure you want to cancel this order?"
-                    );
+                confirmCancelOrder(order) {
+                    this.orderToCancel = order;
+                    this.showCancelModal = true;
+                },
 
-                    if (!confirmed) return;
+                closeCancelModal() {
+                    this.showCancelModal = false;
+                    this.orderToCancel = null;
+                },
+
+                async cancelOrder() {
+                    const order = this.orderToCancel;
+
+                    if (!order) return;
+
+                    this.closeCancelModal();
 
                     try {
                         const response = await fetch(
