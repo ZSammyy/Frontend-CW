@@ -38,13 +38,11 @@
             font-size: clamp(2.5rem, 6vw, 4rem);
             font-weight: 800;
             letter-spacing: 0;
-            background: linear-gradient(
-                90deg,
-                #1769ff,
-                #35c8ff,
-                #fff000,
-                #1769ff
-            );
+            background: linear-gradient(90deg,
+                    #1769ff,
+                    #35c8ff,
+                    #fff000,
+                    #1769ff);
             background-size: 300% 100%;
             background-clip: text;
             -webkit-background-clip: text;
@@ -290,7 +288,7 @@
 
         <!-- Lesson list -->
         <div v-show="!showCart && !showOrders && !showTimetable" :class="layout === 'grid'
-                ? 'row row-cols-2 row-cols-md-3 row-cols-xl-4 g-4 mt-2'
+                ? 'row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mt-2'
                 : 'd-flex flex-column gap-3 mt-2'">
             <div v-for="lesson in sortedLessons" :key="lesson._id" :class="layout === 'grid' ? 'col' : 'w-100'">
                 <div class="card shadow-sm h-100">
@@ -304,39 +302,40 @@
                                     layout === 'grid' ? 'fa-3x mb-3' : 'fa-2x',
                                     'text-primary'
                                 ]" aria-hidden="true"></i>
-
                             <h2 class="card-title mb-2">{{ lesson.topic }}</h2>
                         </div>
 
                         <div :class="layout === 'grid' ? '' : 'ms-auto text-end'">
                             <p class="card-text">Location: {{ lesson.location }}</p>
-
-                            <p v-for="session in lesson.sessions" :key="session.day + session.startTime"
-                                class="card-text">
-                                <i class="fa-regular fa-clock" aria-hidden="true"></i>
-                                {{ session.day }} {{ session.startTime }} - {{ session.endTime }}
-                            </p>
-
                             <p class="card-text">Price: £{{ lesson.price }} per hour</p>
-                            <p class="card-text">Spaces: {{ lesson.space }}</p>
                             <p class="card-text">
                                 Enrolments: {{ enrolmentCounts[lesson._id] || 0 }}
                             </p>
 
-                            <button class="btn btn-outline-primary" :disabled="lesson.space === 0"
-                                @click="addToCart(lesson)">
-                                {{ lesson.space === 0 ? "Sold Out" : "Add to Cart" }}
-                            </button>
+                            <div v-for="option in lesson.scheduleOptions || []" :key="option.id"
+                                class="border rounded-3 p-3 mt-3">
+                                <h3>{{ option.label }}</h3>
+
+                                <p v-for="session in option.sessions || []" :key="session.day + session.startTime"
+                                    class="card-text mb-1">
+                                    <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                                    {{ session.day }} {{ session.startTime }}–{{ session.endTime }}
+                                </p>
+
+                                <p class="card-text mt-2">
+                                    Spaces: {{ availableSpaces(lesson, option) }}
+                                </p>
+
+                                <button class="btn btn-outline-primary" :disabled="availableSpaces(lesson, option) <= 0"
+                                    @click="addToCart(lesson, option)">
+                                    {{ availableSpaces(lesson, option) <= 0 ? "Sold Out" : "Add this timetable" }}
+                                        </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <p v-if="!showCart && !showOrders && !showTimetable && !errorMsg && searchQuery && lessons.length === 0"
-            class="text-muted">
-            No lessons found for "{{ searchQuery }}".
-        </p>
 
         <!-- Cart -->
         <div v-if="showCart">
@@ -348,6 +347,10 @@
                 <div class="card-body">
                     <h3>{{ item.topic }}</h3>
                     <p>{{ item.location }}</p>
+                    <p>{{ item.scheduleOptionLabel }}</p>
+                    <p v-for="session in item.sessions" :key="session.day + session.startTime">
+                        {{ session.day }} {{ session.startTime }}–{{ session.endTime }}
+                    </p>
                     <p>£{{ item.price }} per hour</p>
 
                     <button class="btn btn-outline-danger" @click="removeFromCart(index)">
@@ -423,25 +426,30 @@
                     <div v-for="lesson in order.lessons" :key="lesson._id" class="border-top pt-2 mt-2">
                         <h4>{{ lesson.topic }}</h4>
                         <p>{{ lesson.location }}</p>
+                        <p>Timetable: {{ lesson.scheduleOptionLabel }}</p>
                         <p>£{{ lesson.price }} per hour</p>
 
                         <label class="form-label mt-2" :for="'reschedule-' + order._id + '-' + lesson._id">
-                            Move to another lesson
+                            Choose another lesson and timetable
                         </label>
 
                         <div class="d-flex gap-2">
                             <select class="form-select" :id="'reschedule-' + order._id + '-' + lesson._id"
                                 v-model="rescheduleChoices[order._id + '-' + lesson._id]">
                                 <option disabled value="">
-                                    Choose an available lesson
+                                    Choose an available timetable
                                 </option>
 
-                                <option v-for="availableLesson in lessons" :key="availableLesson._id"
-                                    :value="availableLesson._id"
-                                    :disabled="availableLesson._id === lesson._id || availableLesson.space === 0">
-                                    {{ availableLesson.topic }} — {{ availableLesson.location }}
-                                    ({{ availableLesson.space }} spaces)
-                                </option>
+                                <optgroup v-for="availableLesson in lessons" :key="availableLesson._id"
+                                    :label="availableLesson.topic + ' — ' + availableLesson.location">
+                                    <option v-for="availableOption in availableLesson.scheduleOptions || []"
+                                        :key="availableLesson._id + '-' + availableOption.id"
+                                        :value="availableLesson._id + '::' + availableOption.id" :disabled="(availableLesson._id === lesson._id
+                                            && availableOption.id === lesson.scheduleOptionId)
+                                            || availableOption.space <= 0">
+                                        {{ availableOption.label }} ({{ availableOption.space }} spaces)
+                                    </option>
+                                </optgroup>
                             </select>
 
                             <button class="btn btn-outline-primary flex-shrink-0"
@@ -569,7 +577,7 @@
                 <h2>Added to My Cart</h2>
 
                 <p v-if="selectedLesson">
-                    {{ selectedLesson.topic }} is in your cart.
+                    {{ selectedLesson.topic }} — {{ selectedScheduleOption.label }} is in your cart.
                 </p>
 
                 <button class="btn btn-primary me-2" @click="showCart = true; showOrders = false; showAddModal = false">
@@ -612,6 +620,7 @@
                     layout: "grid",
                     showAddModal: false,
                     selectedLesson: null,
+                    selectedScheduleOption: null,
                     enrolmentCounts: {},
                     cartMessage: ""
                 };
@@ -633,8 +642,12 @@
                     const direction = this.sortOrder === "asc" ? 1 : -1;
 
                     return [...this.lessons].sort((a, b) => {
-                        const first = a[this.sortBy];
-                        const second = b[this.sortBy];
+                        const first = this.sortBy === "space"
+                            ? this.totalAvailableSpaces(a)
+                            : a[this.sortBy];
+                        const second = this.sortBy === "space"
+                            ? this.totalAvailableSpaces(b)
+                            : b[this.sortBy];
 
                         if (typeof first === "string") {
                             return direction * first.localeCompare(second);
@@ -1003,14 +1016,18 @@
                 },
 
                 async rescheduleLesson(order, oldLesson) {
-                    const choiceKey = `${order._id}-${oldLesson._id}`;
-                    const newLessonId = this.rescheduleChoices[choiceKey];
+                    const choiceKey = order._id + "-" + oldLesson._id;
+                    const selectedChoice = this.rescheduleChoices[choiceKey];
 
-                    if (!newLessonId) return;
+                    if (!selectedChoice) return;
+
+                    const [newLessonId, newOptionId] = selectedChoice.split("::");
+
+                    if (!newLessonId || !newOptionId) return;
 
                     try {
                         const response = await fetch(
-                            `${this.apiUrl}/orders/${order._id}/reschedule`,
+                            this.apiUrl + "/orders/" + order._id + "/reschedule",
                             {
                                 method: "PUT",
                                 headers: {
@@ -1019,7 +1036,9 @@
                                 body: JSON.stringify({
                                     phone: this.ordersPhone,
                                     oldLessonId: oldLesson._id,
-                                    newLessonId
+                                    oldOptionId: oldLesson.scheduleOptionId || "default",
+                                    newLessonId,
+                                    newOptionId
                                 })
                             }
                         );
@@ -1032,6 +1051,7 @@
                             );
                         }
 
+                        delete this.rescheduleChoices[choiceKey];
                         await this.fetchOrders();
                         await this.fetchLessons();
                         await this.addNotification(result.message);
@@ -1040,53 +1060,79 @@
                     }
                 },
 
-                hasScheduleConflict(lesson) {
-                    return this.cart.some(cartLesson =>
-                        (cartLesson.sessions || []).some(existingSession =>
-                            (lesson.sessions || []).some(newSession =>
-                                existingSession.day === newSession.day &&
-                                existingSession.startTime < newSession.endTime &&
-                                newSession.startTime < existingSession.endTime
+                totalAvailableSpaces(lesson) {
+                    return (lesson.scheduleOptions || []).reduce(
+                        (total, option) => total + Number(option.space || 0),
+                        0
+                    );
+                },
+
+                availableSpaces(lesson, option) {
+                    const alreadyInCart = this.cart.filter(item =>
+                        item.lessonId === String(lesson._id)
+                        && item.optionId === String(option.id)
+                    ).length;
+
+                    return Math.max(0, Number(option.space || 0) - alreadyInCart);
+                },
+
+                hasScheduleConflict(sessions) {
+                    return this.cart.some(cartItem =>
+                        (cartItem.sessions || []).some(existingSession =>
+                            (sessions || []).some(newSession =>
+                                existingSession.day === newSession.day
+                                && existingSession.startTime < newSession.endTime
+                                && newSession.startTime < existingSession.endTime
                             )
                         )
                     );
                 },
 
-                async addToCart(lesson) {
+                async addToCart(lesson, option) {
                     this.cartMessage = "";
 
-                    if (lesson.space <= 0) return;
-
-                    if (this.hasScheduleConflict(lesson)) {
-                        this.cartMessage =
-                            "This lesson overlaps with a lesson already in your cart.";
+                    if (!option || this.availableSpaces(lesson, option) <= 0) {
+                        this.cartMessage = "That timetable has no spaces left.";
                         return;
                     }
 
-                    lesson.space--;
-                    this.cart.push(lesson);
+                    if (this.hasScheduleConflict(option.sessions)) {
+                        this.cartMessage =
+                            "This timetable overlaps with a lesson already in your cart.";
+                        return;
+                    }
+
+                    const cartItem = {
+                        lessonId: String(lesson._id),
+                        optionId: String(option.id),
+                        topic: lesson.topic,
+                        location: lesson.location,
+                        price: lesson.price,
+                        scheduleOptionLabel: option.label,
+                        sessions: (option.sessions || []).map(session => ({ ...session }))
+                    };
+
+                    this.cart.push(cartItem);
                     this.selectedLesson = lesson;
+                    this.selectedScheduleOption = option;
 
                     await this.addNotification(
-                        lesson.topic + " was added to your cart."
+                        lesson.topic + " (" + option.label + ") was added to your cart."
                     );
 
-                    // Keep the add-to-cart choices visible and let the bell badge
-                    // indicate that the notification was added.
                     this.showNotificationPopup = false;
                     this.showAddModal = true;
                 },
 
                 async removeFromCart(index) {
-                    const lesson = this.cart[index];
+                    const item = this.cart[index];
 
-                    if (!lesson) return;
+                    if (!item) return;
 
-                    lesson.space++;
                     this.cart.splice(index, 1);
 
                     await this.addNotification(
-                        lesson.topic + " was removed from your cart."
+                        item.topic + " (" + item.scheduleOptionLabel + ") was removed from your cart."
                     );
                 },
 
@@ -1097,11 +1143,14 @@
                         name: this.customerName,
                         phone: phoneForNotifications,
                         paymentMethod: this.paymentMethod,
-                        lessonIDs: this.cart.map(lesson => lesson._id)
+                        lessonSelections: this.cart.map(item => ({
+                            lessonId: item.lessonId,
+                            optionId: item.optionId
+                        }))
                     };
 
                     try {
-                        const orderResponse = await fetch(`${this.apiUrl}/orders`, {
+                        const orderResponse = await fetch(this.apiUrl + "/orders", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json"
@@ -1117,27 +1166,6 @@
                             );
                         }
 
-                        for (const lesson of this.cart) {
-                            const updateResponse = await fetch(
-                                `${this.apiUrl}/lessons/${lesson._id}`,
-                                {
-                                    method: "PUT",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify({
-                                        space: Number(lesson.space)
-                                    })
-                                }
-                            );
-
-                            if (!updateResponse.ok) {
-                                throw new Error(
-                                    "Order saved, but lesson spaces could not be updated."
-                                );
-                            }
-                        }
-
                         this.notificationPhone = phoneForNotifications;
                         localStorage.setItem(
                             "cwhubNotificationPhone",
@@ -1148,6 +1176,7 @@
                         this.customerName = "";
                         this.customerPhone = "";
                         this.paymentMethod = "";
+                        this.showCart = false;
 
                         await this.fetchLessons();
                         await this.addNotification("Order submitted successfully.");
