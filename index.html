@@ -42,7 +42,7 @@
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap my-3">
             <h1 class="mb-0">{{ siteName }}</h1>
 
-            <div v-if="!showCart && !showOrders" class="d-flex flex-column align-items-end gap-2"
+            <div v-if="!showCart && !showOrders && !showTimetable" class="d-flex flex-column align-items-end gap-2"
                 style="width: min(100%, 720px)">
 
                 <!-- First row: search, My Cart, and My Orders -->
@@ -62,7 +62,8 @@
                         My Cart ({{ cart.length }})
                     </button>
 
-                    <button class="btn btn-outline-primary flex-shrink-0" @click="showOrders = true; showCart = false; showTimetable = false"; searchQuery = ''; fetchLessons();>
+                    <button class="btn btn-outline-primary flex-shrink-0" type="button"
+                        @click="showOrders = true; showCart = false; showTimetable = false; searchQuery = ''; fetchLessons()">
                         <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i>
                         My Orders
                     </button>
@@ -108,6 +109,9 @@
         <div v-if="errorMsg" class="alert alert-danger mt-3">
             {{ errorMsg }}
         </div>
+        <div v-if="cartMessage && !showCart" class="alert alert-warning mt-3">
+            {{ cartMessage }}
+        </div>
 
         <!-- Lesson results -->
         <div v-show="!showCart && !showOrders && !showTimetable" :class="layout === 'grid'
@@ -144,6 +148,9 @@
 
                             <p class="card-text">Price: £{{ lesson.price }} per hour</p>
                             <p class="card-text">Spaces: {{ lesson.space }}</p>
+                            <p class="card-text">
+                                Enrolments: {{ enrolmentCounts[lesson._id] || 0 }}
+                            </p>
 
                             <button class="btn btn-outline-primary" :disabled="lesson.space === 0"
                                 @click="addToCart(lesson)">
@@ -223,7 +230,7 @@
                 <button class="btn btn-primary" type="submit" :disabled="!ordersPhone">
                     Find Orders
                 </button>
-                <button v-if="orders.length > 0" class="btn btn-outline-primary flex-shrink-0"
+                <button v-if="orders.length > 0" type="button" class="btn btn-outline-primary flex-shrink-0"
                     @click="showTimetable = true; showCart = false; showOrders = false">
                     <i class="fa-solid fa-calendar-days me-1" aria-hidden="true"></i>
                     My Timetable
@@ -277,67 +284,69 @@
                 Back to lessons
             </button>
         </div>
-        <div v-if="showTimetable">
-            <h2>My Timetable</h2>
+    </div>
 
-            <p v-if="orders.length === 0">
-                No timetable entries are loaded yet. Open My Orders and search with your checkout phone number first.
+    <div v-if="showTimetable">
+        <h2>My Timetable</h2>
+
+        <p v-if="orders.length === 0">
+            No timetable entries are loaded yet. Open My Orders and search with your checkout phone number first.
+        </p>
+
+        <div v-else class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Time</th>
+                        <th>Lesson</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <template v-for="order in orders" :key="order._id">
+                        <template v-for="lesson in order.lessons" :key="lesson._id">
+                            <tr v-for="session in lesson.sessions || []"
+                                :key="lesson._id + session.day + session.startTime">
+                                <td>{{ session.day }}</td>
+                                <td>{{ session.startTime }}–{{ session.endTime }}</td>
+                                <td>{{ lesson.topic }}</td>
+                                <td>{{ lesson.location }}</td>
+                            </tr>
+                        </template>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <button class="btn btn-secondary" @click="showTimetable = false; showOrders = true">
+            Back to My Orders
+        </button>
+    </div>
+
+    <!-- Added-to-cart pop-up -->
+    <div v-if="showAddModal" class="modal-backdrop-custom" @click.self="showAddModal = false">
+
+        <div class="modal-box-custom">
+            <button class="btn-close float-end" aria-label="Close" @click="showAddModal = false">
+            </button>
+
+            <h2>Added to My Cart</h2>
+
+            <p v-if="selectedLesson">
+                {{ selectedLesson.topic }} is in your cart.
             </p>
 
-            <div v-else class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead>
-                        <tr>
-                            <th>Day</th>
-                            <th>Time</th>
-                            <th>Lesson</th>
-                            <th>Location</th>
-                        </tr>
-                    </thead>
+            <button class="btn btn-primary me-2" @click="showCart = true; showOrders = false; showAddModal = false">
+                Continue to checkout
+            </button>
 
-                    <tbody>
-                        <template v-for="order in orders" :key="order._id">
-                            <template v-for="lesson in order.lessons" :key="lesson._id">
-                                <tr v-for="session in lesson.sessions || []"
-                                    :key="lesson._id + session.day + session.startTime">
-                                    <td>{{ session.day }}</td>
-                                    <td>{{ session.startTime }}–{{ session.endTime }}</td>
-                                    <td>{{ lesson.topic }}</td>
-                                    <td>{{ lesson.location }}</td>
-                                </tr>
-                            </template>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-
-            <button class="btn btn-secondary" @click="showTimetable = false; showOrders = true">
-                Back to My Orders
+            <button class="btn btn-secondary" @click="showAddModal = false">
+                Continue browsing
             </button>
         </div>
-
-        <!-- Added-to-cart pop-up -->
-        <div v-if="showAddModal" class="modal-backdrop-custom" @click.self="showAddModal = false">
-
-            <div class="modal-box-custom">
-                <button class="btn-close float-end" aria-label="Close" @click="showAddModal = false">
-                </button>
-
-                <h2>Added to My Cart</h2>
-
-                <p v-if="selectedLesson">
-                    {{ selectedLesson.topic }} is in your cart.
-                </p>
-
-                <button class="btn btn-primary me-2" @click="showCart = true; showOrders = false; showAddModal = false">
-                    Continue to checkout
-                </button>
-
-                <button class="btn btn-secondary" @click="showAddModal = false">
-                    Continue browsing
-                </button>
-            </div>
-        </div>
+    </div>
     </div>
 
     <script>
@@ -366,7 +375,9 @@
                     searchQuery: "",
                     layout: "grid",
                     showAddModal: false,
-                    selectedLesson: null
+                    selectedLesson: null,
+                    enrolmentCounts: {},
+                    cartMessage: "",
                 };
             },
 
@@ -417,10 +428,37 @@
                         }
 
                         this.lessons = await response.json();
+                        await this.fetchEnrolmentCounts();
                     } catch (error) {
                         console.error(error);
                         this.errorMsg = "Could not load lessons. Check that the backend is running.";
                     }
+                },
+
+                async fetchEnrolmentCounts() {
+                    const counts = {};
+
+                    await Promise.all(
+                        this.lessons.map(async lesson => {
+                            try {
+                                const response = await fetch(
+                                    `${this.apiUrl}/enrolment/${lesson._id}`
+                                );
+
+                                if (!response.ok) {
+                                    throw new Error("Could not get enrolment count.");
+                                }
+
+                                const result = await response.json();
+                                counts[lesson._id] = result.enrolment;
+                            } catch (error) {
+                                console.error(error);
+                                counts[lesson._id] = 0;
+                            }
+                        })
+                    );
+
+                    this.enrolmentCounts = counts;
                 },
 
                 async fetchOrders() {
@@ -476,6 +514,7 @@
 
                         this.orders = this.orders.filter(item => item._id !== order._id);
                         this.ordersMessage = result.message;
+                        await this.fetchLessons();
                     } catch (error) {
                         this.ordersMessage = error.message;
                     }
@@ -517,15 +556,35 @@
                     }
                 },
 
-                addToCart(lesson) {
-                    if (lesson.space > 0) {
-                        lesson.space--;
-                        this.cart.push(lesson);
-                        this.selectedLesson = lesson;
-                        this.showAddModal = true;
-                    }
+                hasScheduleConflict(lesson) {
+                    return this.cart.some(cartLesson =>
+                        (cartLesson.sessions || []).some(existingSession =>
+                            (lesson.sessions || []).some(newSession =>
+                                existingSession.day === newSession.day &&
+                                existingSession.startTime < newSession.endTime &&
+                                newSession.startTime < existingSession.endTime
+                            )
+                        )
+                    );
                 },
 
+                addToCart(lesson) {
+                    this.cartMessage = "";
+
+                    if (lesson.space <= 0) {
+                        return;
+                    }
+
+                    if (this.hasScheduleConflict(lesson)) {
+                        this.cartMessage = "This lesson overlaps with a lesson already in your cart.";
+                        return;
+                    }
+
+                    lesson.space--;
+                    this.cart.push(lesson);
+                    this.selectedLesson = lesson;
+                    this.showAddModal = true;
+                },
                 removeFromCart(index) {
                     const lesson = this.cart[index];
                     lesson.space++;
