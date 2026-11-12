@@ -30,76 +30,110 @@
             background: white;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
+
+        .notification-backdrop-custom {
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            padding: 5rem 1rem 1rem;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .notification-panel-custom {
+            width: min(100%, 420px);
+            max-height: 75vh;
+            overflow-y: auto;
+            padding: 1rem;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 
 <body>
     <div id="app" class="container-fluid p-3">
-
-        <!-- Header, search, cart, orders, sorting, and layout controls -->
+        <!-- Header and controls -->
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap my-3">
             <h1 class="mb-0">{{ siteName }}</h1>
 
-            <div v-if="!showCart && !showOrders && !showTimetable" class="d-flex flex-column align-items-end gap-2"
-                style="width: min(100%, 720px)">
-                <!-- Search, My Cart, and My Orders -->
-                <div class="d-flex align-items-center justify-content-end gap-2 w-100 flex-nowrap">
-                    <div class="input-group flex-grow-1" style="min-width: 0">
-                        <input type="search" class="form-control" v-model.trim="searchQuery" @input="fetchLessons"
-                            placeholder="Search lessons..." aria-label="Search lessons">
+            <div class="d-flex align-items-start justify-content-end gap-2 flex-grow-1">
+                <div v-if="!showCart && !showOrders && !showTimetable" class="d-flex flex-column align-items-end gap-2"
+                    style="width: min(100%, 720px)">
+                    <!-- Search, cart, and orders -->
+                    <div class="d-flex align-items-center justify-content-end gap-2 w-100 flex-nowrap">
+                        <div class="input-group flex-grow-1" style="min-width: 0">
+                            <input type="search" class="form-control" v-model.trim="searchQuery" @input="fetchLessons"
+                                placeholder="Search lessons..." aria-label="Search lessons">
 
-                        <button class="btn btn-outline-secondary" type="button" aria-label="Search"
-                            @click="fetchLessons">
-                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <button class="btn btn-outline-secondary" type="button" aria-label="Search"
+                                @click="fetchLessons">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <button class="btn btn-success flex-shrink-0"
+                            @click="showCart = true; showOrders = false; showTimetable = false">
+                            <i class="fa-solid fa-cart-shopping me-1" aria-hidden="true"></i>
+                            My Cart ({{ cart.length }})
+                        </button>
+
+                        <button class="btn btn-outline-primary flex-shrink-0" type="button"
+                            @click="showOrders = true; showCart = false; showTimetable = false; searchQuery = ''; fetchLessons()">
+                            <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i>
+                            My Orders
                         </button>
                     </div>
 
-                    <button class="btn btn-success flex-shrink-0" @click="showCart = true; showOrders = false">
-                        <i class="fa-solid fa-cart-shopping me-1" aria-hidden="true"></i>
-                        My Cart ({{ cart.length }})
-                    </button>
+                    <!-- Sorting and layout controls -->
+                    <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
+                        <label class="d-flex align-items-center gap-2">
+                            Sort by:
+                            <select v-model="sortBy" class="form-select">
+                                <option value="topic">Subject</option>
+                                <option value="location">Location</option>
+                                <option value="price">Price</option>
+                                <option value="space">Spaces</option>
+                            </select>
+                        </label>
 
-                    <button class="btn btn-outline-primary flex-shrink-0" type="button"
-                        @click="showOrders = true; showCart = false; showTimetable = false; searchQuery = ''; fetchLessons()">
-                        <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i>
-                        My Orders
-                    </button>
-                </div>
+                        <label class="d-flex align-items-center gap-2">
+                            Order:
+                            <select v-model="sortOrder" class="form-select">
+                                <option value="asc">Ascending</option>
+                                <option value="desc">Descending</option>
+                            </select>
+                        </label>
 
-                <!-- Sorting and Grid/List controls -->
-                <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
-                    <label class="d-flex align-items-center gap-2">
-                        Sort by:
-                        <select v-model="sortBy" class="form-select">
-                            <option value="topic">Subject</option>
-                            <option value="location">Location</option>
-                            <option value="price">Price</option>
-                            <option value="space">Spaces</option>
-                        </select>
-                    </label>
+                        <div class="btn-group" role="group" aria-label="Lesson layout">
+                            <button type="button" class="btn btn-outline-secondary"
+                                :class="{ active: layout === 'grid' }" @click="layout = 'grid'">
+                                <i class="fa-solid fa-grip" aria-hidden="true"></i>
+                                Grid
+                            </button>
 
-                    <label class="d-flex align-items-center gap-2">
-                        Order:
-                        <select v-model="sortOrder" class="form-select">
-                            <option value="asc">Ascending</option>
-                            <option value="desc">Descending</option>
-                        </select>
-                    </label>
-
-                    <div class="btn-group" role="group" aria-label="Lesson layout">
-                        <button type="button" class="btn btn-outline-secondary" :class="{ active: layout === 'grid' }"
-                            @click="layout = 'grid'">
-                            <i class="fa-solid fa-grip" aria-hidden="true"></i>
-                            Grid
-                        </button>
-
-                        <button type="button" class="btn btn-outline-secondary" :class="{ active: layout === 'list' }"
-                            @click="layout = 'list'">
-                            <i class="fa-solid fa-list" aria-hidden="true"></i>
-                            List
-                        </button>
+                            <button type="button" class="btn btn-outline-secondary"
+                                :class="{ active: layout === 'list' }" @click="layout = 'list'">
+                                <i class="fa-solid fa-list" aria-hidden="true"></i>
+                                List
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Notification button -->
+                <button class="btn btn-outline-secondary flex-shrink-0 position-relative" type="button"
+                    aria-label="Notifications" title="Notifications" @click="showNotificationPopup = true">
+                    <i class="fa-solid fa-bell" aria-hidden="true"></i>
+
+                    <span v-if="unreadNotificationCount > 0"
+                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                        {{ unreadNotificationCount }}
+                    </span>
+                </button>
             </div>
         </div>
 
@@ -132,9 +166,7 @@
                         </div>
 
                         <div :class="layout === 'grid' ? '' : 'ms-auto text-end'">
-                            <p class="card-text">
-                                Location: {{ lesson.location }}
-                            </p>
+                            <p class="card-text">Location: {{ lesson.location }}</p>
 
                             <p v-for="session in lesson.sessions" :key="session.day + session.startTime"
                                 class="card-text">
@@ -142,14 +174,8 @@
                                 {{ session.day }} {{ session.startTime }} - {{ session.endTime }}
                             </p>
 
-                            <p class="card-text">
-                                Price: £{{ lesson.price }} per hour
-                            </p>
-
-                            <p class="card-text">
-                                Spaces: {{ lesson.space }}
-                            </p>
-
+                            <p class="card-text">Price: £{{ lesson.price }} per hour</p>
+                            <p class="card-text">Spaces: {{ lesson.space }}</p>
                             <p class="card-text">
                                 Enrolments: {{ enrolmentCounts[lesson._id] || 0 }}
                             </p>
@@ -173,9 +199,7 @@
         <div v-if="showCart">
             <h2>Your Cart</h2>
 
-            <p v-if="cart.length === 0">
-                Your cart is empty.
-            </p>
+            <p v-if="cart.length === 0">Your cart is empty.</p>
 
             <div v-for="(item, index) in cart" :key="index" class="card mb-3">
                 <div class="card-body">
@@ -212,13 +236,6 @@
                     Back to lessons
                 </button>
             </div>
-
-            <div v-if="orderMessage" class="alert mt-3" :class="{
-                    'alert-success': orderMessage === 'Order submitted successfully.',
-                    'alert-danger': orderMessage !== 'Order submitted successfully.'
-                }">
-                {{ orderMessage }}
-            </div>
         </div>
 
         <!-- My Orders -->
@@ -240,10 +257,6 @@
                     My Timetable
                 </button>
             </form>
-
-            <div v-if="ordersMessage" class="alert alert-info">
-                {{ ordersMessage }}
-            </div>
 
             <div v-for="order in orders" :key="order._id" class="card mb-3">
                 <div class="card-body">
@@ -293,7 +306,7 @@
             </button>
         </div>
 
-        <!-- My Timetable: kept inside #app so Vue can control it -->
+        <!-- My Timetable -->
         <div v-if="showTimetable">
             <h2>My Timetable</h2>
 
@@ -333,7 +346,65 @@
             </button>
         </div>
 
-        <!-- Added-to-cart pop-up -->
+        <!-- Notification popup -->
+        <div v-if="showNotificationPopup" class="notification-backdrop-custom"
+            @click.self="showNotificationPopup = false">
+            <div class="notification-panel-custom" role="dialog" aria-modal="true">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="mb-0">Notifications</h2>
+
+                    <div class="d-flex gap-2">
+                        <button v-if="unreadNotificationCount > 0" class="btn btn-sm btn-outline-primary"
+                            @click="markAllNotificationsRead">
+                            Mark all as read
+                        </button>
+
+                        <button class="btn-close" aria-label="Close notifications"
+                            @click="showNotificationPopup = false"></button>
+                    </div>
+                </div>
+
+                <p v-if="notifications.length === 0">
+                    No notifications yet.
+                </p>
+
+                <div v-else>
+                    <div v-for="notification in notifications" :key="notification.id"
+                        class="notification-item p-3 border-bottom"
+                        :class="{ 'bg-light': notification.read, 'bg-white': !notification.read }">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <p class="mb-1">{{ notification.message }}</p>
+                                <small class="text-muted">{{ notification.time }}</small>
+
+                                <span v-if="!notification.read" class="badge text-bg-primary ms-2">
+                                    New
+                                </span>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button v-if="!notification.read" class="btn btn-sm btn-outline-primary"
+                                    @click="markNotificationRead(notification.id)">
+                                    Mark as read
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-danger"
+                                    @click="deleteNotification(notification.id)" aria-label="Delete notification">
+                                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline-secondary btn-sm mt-3" @click="clearNotifications">
+                        Clear notifications
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Added-to-cart popup -->
         <div v-if="showAddModal" class="modal-backdrop-custom" @click.self="showAddModal = false">
             <div class="modal-box-custom">
                 <button class="btn-close float-end" aria-label="Close" @click="showAddModal = false"></button>
@@ -353,7 +424,6 @@
                 </button>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -369,16 +439,17 @@
                     showCart: false,
                     showOrders: false,
                     showTimetable: false,
+                    showNotificationPopup: false,
+                    notifications: [],
+                    notificationPhone: "",
                     orders: [],
                     ordersPhone: "",
                     rescheduleChoices: {},
-                    ordersMessage: "",
                     apiUrl: "https://m01053506-cwhubbase.onrender.com",
                     lessons: [],
                     errorMsg: "",
                     customerName: "",
                     customerPhone: "",
-                    orderMessage: "",
                     searchQuery: "",
                     layout: "grid",
                     showAddModal: false,
@@ -390,6 +461,13 @@
 
             mounted() {
                 this.fetchLessons();
+
+                const savedPhone = localStorage.getItem("cwhubNotificationPhone");
+
+                if (savedPhone) {
+                    this.notificationPhone = savedPhone;
+                    this.fetchNotifications();
+                }
             },
 
             computed: {
@@ -408,6 +486,10 @@
                     });
                 },
 
+                unreadNotificationCount() {
+                    return this.notifications.filter(item => !item.read).length;
+                },
+
                 isNameValid() {
                     return /^[A-Za-z ]+$/.test(this.customerName);
                 },
@@ -424,6 +506,215 @@
             },
 
             methods: {
+                formatNotification(item) {
+                    return {
+                        id: String(item._id),
+                        message: item.message,
+                        time: new Date(item.createdAt).toLocaleString(),
+                        read: Boolean(item.read),
+                        persisted: true
+                    };
+                },
+
+                async fetchNotifications() {
+                    const phone = this.notificationPhone ||
+                        localStorage.getItem("cwhubNotificationPhone");
+
+                    if (!phone) return;
+
+                    this.notificationPhone = phone;
+
+                    try {
+                        const response = await fetch(
+                            `${this.apiUrl}/notifications?phone=${encodeURIComponent(phone)}`
+                        );
+
+                        if (!response.ok) {
+                            throw new Error("Could not load notifications.");
+                        }
+
+                        const result = await response.json();
+                        this.notifications = result.map(item =>
+                            this.formatNotification(item)
+                        );
+                    } catch (error) {
+                        console.error("Could not load notifications:", error);
+                    }
+                },
+
+                async addNotification(message) {
+                    const phone = String(
+                        this.customerPhone ||
+                        this.ordersPhone ||
+                        this.notificationPhone ||
+                        localStorage.getItem("cwhubNotificationPhone") ||
+                        ""
+                    ).trim();
+
+                    const temporaryId = `temporary-${Date.now()}-${Math.random()}`;
+
+                    this.notifications.unshift({
+                        id: temporaryId,
+                        message,
+                        time: new Date().toLocaleString(),
+                        read: false,
+                        persisted: false
+                    });
+
+                    this.showNotificationPopup = true;
+
+                    if (!phone) return;
+
+                    this.notificationPhone = phone;
+                    localStorage.setItem("cwhubNotificationPhone", phone);
+
+                    try {
+                        const response = await fetch(`${this.apiUrl}/notifications`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ phone, message })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error("Could not save notification.");
+                        }
+
+                        const savedItem = await response.json();
+                        const savedNotification = this.formatNotification(savedItem);
+
+                        this.notifications = this.notifications.map(item =>
+                            item.id === temporaryId ? savedNotification : item
+                        );
+                    } catch (error) {
+                        console.error("Could not save notification:", error);
+                    }
+                },
+
+                async markNotificationRead(id) {
+                    const notification = this.notifications.find(item => item.id === id);
+
+                    if (!notification) return;
+
+                    const phone = this.notificationPhone ||
+                        localStorage.getItem("cwhubNotificationPhone");
+
+                    if (notification.persisted && phone) {
+                        try {
+                            const response = await fetch(
+                                `${this.apiUrl}/notifications/${encodeURIComponent(id)}/read`,
+                                {
+                                    method: "PATCH",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({ phone })
+                                }
+                            );
+
+                            if (!response.ok) {
+                                throw new Error("Could not mark notification as read.");
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            return;
+                        }
+                    }
+
+                    notification.read = true;
+                },
+
+                async deleteNotification(id) {
+                    const notification = this.notifications.find(item => item.id === id);
+
+                    if (!notification) return;
+
+                    const phone = this.notificationPhone ||
+                        localStorage.getItem("cwhubNotificationPhone");
+
+                    if (notification.persisted && phone) {
+                        try {
+                            const response = await fetch(
+                                `${this.apiUrl}/notifications/${encodeURIComponent(id)}`,
+                                {
+                                    method: "DELETE",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({ phone })
+                                }
+                            );
+
+                            if (!response.ok) {
+                                throw new Error("Could not delete notification.");
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            return;
+                        }
+                    }
+
+                    this.notifications = this.notifications.filter(item => item.id !== id);
+                },
+
+                async markAllNotificationsRead() {
+                    const phone = this.notificationPhone ||
+                        localStorage.getItem("cwhubNotificationPhone");
+
+                    if (phone) {
+                        try {
+                            const response = await fetch(
+                                `${this.apiUrl}/notifications/read-all`,
+                                {
+                                    method: "PATCH",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({ phone })
+                                }
+                            );
+
+                            if (!response.ok) {
+                                throw new Error("Could not mark notifications as read.");
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            return;
+                        }
+                    }
+
+                    this.notifications.forEach(item => {
+                        item.read = true;
+                    });
+                },
+
+                async clearNotifications() {
+                    const phone = this.notificationPhone ||
+                        localStorage.getItem("cwhubNotificationPhone");
+
+                    if (phone) {
+                        try {
+                            const response = await fetch(`${this.apiUrl}/notifications`, {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({ phone })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error("Could not clear notifications.");
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            return;
+                        }
+                    }
+
+                    this.notifications = [];
+                },
+
                 async fetchLessons() {
                     try {
                         const response = await fetch(
@@ -438,7 +729,8 @@
                         await this.fetchEnrolmentCounts();
                     } catch (error) {
                         console.error(error);
-                        this.errorMsg = "Could not load lessons. Check that the backend is running.";
+                        this.errorMsg =
+                            "Could not load lessons. Check that the backend is running.";
                     }
                 },
 
@@ -470,7 +762,16 @@
 
                 async fetchOrders() {
                     this.orders = [];
-                    this.ordersMessage = "";
+                    this.notificationPhone = this.ordersPhone.trim();
+
+                    if (!this.notificationPhone) return;
+
+                    localStorage.setItem(
+                        "cwhubNotificationPhone",
+                        this.notificationPhone
+                    );
+
+                    await this.fetchNotifications();
 
                     try {
                         const response = await fetch(
@@ -486,11 +787,13 @@
                         this.orders = result;
 
                         if (this.orders.length === 0) {
-                            this.ordersMessage = "No orders found for that phone number.";
+                            await this.addNotification(
+                                "No orders found for that phone number."
+                            );
                         }
                     } catch (error) {
                         console.error(error);
-                        this.ordersMessage = error.message;
+                        await this.addNotification(error.message);
                     }
                 },
 
@@ -499,11 +802,7 @@
                         "Are you sure you want to cancel this order?"
                     );
 
-                    if (!confirmed) {
-                        return;
-                    }
-
-                    this.ordersMessage = "";
+                    if (!confirmed) return;
 
                     try {
                         const response = await fetch(
@@ -522,17 +821,19 @@
                         const result = await response.json();
 
                         if (!response.ok) {
-                            throw new Error(result.error || "Could not cancel the order.");
+                            throw new Error(
+                                result.error || "Could not cancel the order."
+                            );
                         }
 
                         this.orders = this.orders.filter(
                             item => item._id !== order._id
                         );
-                        this.ordersMessage = result.message;
 
                         await this.fetchLessons();
+                        await this.addNotification(result.message);
                     } catch (error) {
-                        this.ordersMessage = error.message;
+                        await this.addNotification(error.message);
                     }
                 },
 
@@ -540,9 +841,7 @@
                     const choiceKey = `${order._id}-${oldLesson._id}`;
                     const newLessonId = this.rescheduleChoices[choiceKey];
 
-                    if (!newLessonId) {
-                        return;
-                    }
+                    if (!newLessonId) return;
 
                     try {
                         const response = await fetch(
@@ -554,7 +853,7 @@
                                 },
                                 body: JSON.stringify({
                                     phone: this.ordersPhone,
-                                    oldLessonId,
+                                    oldLessonId: oldLesson._id,
                                     newLessonId
                                 })
                             }
@@ -563,15 +862,16 @@
                         const result = await response.json();
 
                         if (!response.ok) {
-                            throw new Error(result.error || "Could not reschedule the order.");
+                            throw new Error(
+                                result.error || "Could not reschedule the order."
+                            );
                         }
 
                         await this.fetchOrders();
                         await this.fetchLessons();
-
-                        this.ordersMessage = result.message;
+                        await this.addNotification(result.message);
                     } catch (error) {
-                        this.ordersMessage = error.message;
+                        await this.addNotification(error.message);
                     }
                 },
 
@@ -590,9 +890,7 @@
                 addToCart(lesson) {
                     this.cartMessage = "";
 
-                    if (lesson.space <= 0) {
-                        return;
-                    }
+                    if (lesson.space <= 0) return;
 
                     if (this.hasScheduleConflict(lesson)) {
                         this.cartMessage =
@@ -613,28 +911,29 @@
                 },
 
                 async placeOrder() {
-                    this.orderMessage = "";
+                    const phoneForNotifications = this.customerPhone.trim();
 
                     const order = {
                         name: this.customerName,
-                        phone: this.customerPhone,
+                        phone: phoneForNotifications,
                         lessonIDs: this.cart.map(lesson => lesson._id)
                     };
 
                     try {
-                        const orderResponse = await fetch(
-                            `${this.apiUrl}/orders`,
-                            {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify(order)
-                            }
-                        );
+                        const orderResponse = await fetch(`${this.apiUrl}/orders`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(order)
+                        });
+
+                        const orderResult = await orderResponse.json();
 
                         if (!orderResponse.ok) {
-                            throw new Error("Could not save the order.");
+                            throw new Error(
+                                orderResult.error || "Could not save the order."
+                            );
                         }
 
                         for (const lesson of this.cart) {
@@ -658,14 +957,20 @@
                             }
                         }
 
-                        this.orderMessage = "Order submitted successfully.";
+                        this.notificationPhone = phoneForNotifications;
+                        localStorage.setItem(
+                            "cwhubNotificationPhone",
+                            phoneForNotifications
+                        );
+
                         this.cart = [];
                         this.customerName = "";
                         this.customerPhone = "";
 
                         await this.fetchLessons();
+                        await this.addNotification("Order submitted successfully.");
                     } catch (error) {
-                        this.orderMessage = error.message;
+                        await this.addNotification(error.message);
                     }
                 }
             }
