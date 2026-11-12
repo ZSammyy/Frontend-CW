@@ -62,7 +62,7 @@
                         My Cart ({{ cart.length }})
                     </button>
 
-                    <button class="btn btn-outline-primary flex-shrink-0" @click="showOrders = true; showCart = false">
+                    <button class="btn btn-outline-primary flex-shrink-0" @click="showOrders = true; showCart = false; showTimetable = false"; searchQuery = ''; fetchLessons();>
                         <i class="fa-solid fa-receipt me-1" aria-hidden="true"></i>
                         My Orders
                     </button>
